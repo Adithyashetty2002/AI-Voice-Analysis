@@ -1,0 +1,122 @@
+[
+    {
+        "start": 8.039,
+        "end": 11.18,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 11.503,
+        "end": 12.912,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 14.015,
+        "end": 15.577,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 15.883,
+        "end": 20.297,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 20.62,
+        "end": 23.947,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 23.981,
+        "end": 30.365,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 26.477,
+        "end": 27.207,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 30.84,
+        "end": 33.625,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 33.642,
+        "end": 37.02,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 37.462,
+        "end": 38.362,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 38.718,
+        "end": 40.45,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 40.076,
+        "end": 46.511,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 46.579,
+        "end": 58.124,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 58.43,
+        "end": 74.626,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 74.626,
+        "end": 78.786,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 79.346,
+        "end": 102.233,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 91.316,
+        "end": 91.893,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 102.402,
+        "end": 104.151,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    },
+    {
+        "start": 104.847,
+        "end": 113.251,
+        "speaker": "SPEAKER_00",
+        "confidence": 1.0
+    },
+    {
+        "start": 113.693,
+        "end": 118.379,
+        "speaker": "SPEAKER_01",
+        "confidence": 1.0
+    }
+]

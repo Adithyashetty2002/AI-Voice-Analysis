@@ -1,0 +1,431 @@
+[8.039s - 11.18s] SPEAKER_00 (Confidence: 1.0):
+Thank you for calling Nissan. My name is[private_person]. Can I have your name?
+Word-level timestamps:
+  [8.039s - 8.159s] Thank
+  [8.159s - 8.279s] you
+  [8.279s - 8.379s] for
+  [8.379s - 8.659s] calling
+  [8.659s - 9.339s] Nissan.
+  [9.459s - 9.479s] My
+  [9.479s - 9.559s] name
+  [9.559s - 9.719s] is
+  [9.719s - 10.239s] [private_person]
+  [10.319s - 10.479s] Can
+  [10.479s - 10.559s] I
+  [10.559s - 10.699s] have
+  [10.699s - 10.819s] your
+  [10.819s - 11.119s] name?
+
+[11.503s - 12.912s] SPEAKER_01 (Confidence: 1.0):
+Yeah, my name is[private_person][private_person].
+Word-level timestamps:
+  [11.503s - 11.723s] Yeah,
+  [11.723s - 11.803s] my
+  [11.803s - 11.923s] name
+  [11.923s - 12.123s] is
+  [12.123s - 12.363s] [private_person]
+  [12.363s - 12.943s] [private_person]
+
+[14.015s - 15.577s] SPEAKER_00 (Confidence: 1.0):
+Thank you,[private_person]. How can I help you?
+Word-level timestamps:
+  [14.154s - 14.194s] Thank
+  [14.194s - 14.434s] you,
+  [14.434s - 14.734s] [private_person]
+  [14.734s - 14.794s] How
+  [14.794s - 14.934s] can
+  [14.934s - 15.014s] I
+  [15.014s - 15.174s] help
+  [15.174s - 15.434s] you?
+
+[15.883s - 20.297s] SPEAKER_01 (Confidence: 1.0):
+I was just calling about to see how much it would cost to update the map in my car.
+Word-level timestamps:
+  [16.054s - 16.054s] I
+  [16.054s - 16.374s] was
+  [16.374s - 16.474s] just
+  [16.474s - 16.774s] calling
+  [16.774s - 17.074s] about
+  [17.074s - 17.274s] to
+  [17.274s - 17.574s] see
+  [17.574s - 17.854s] how
+  [17.854s - 18.014s] much
+  [18.014s - 18.114s] it
+  [18.114s - 18.234s] would
+  [18.234s - 18.554s] cost
+  [18.554s - 18.714s] to
+  [18.714s - 19.014s] update
+  [19.014s - 19.174s] the
+  [19.174s - 19.414s] map
+  [19.414s - 19.534s] in
+  [19.534s - 19.694s] my
+  [19.694s - 20.174s] car.
+
+[20.62s - 23.947s] SPEAKER_00 (Confidence: 1.0):
+I'd be happy to help you with that today. Did you receive a mailer from us?
+Word-level timestamps:
+  [20.637s - 20.797s] I'd
+  [20.797s - 20.857s] be
+  [20.857s - 21.037s] happy
+  [21.037s - 21.217s] to
+  [21.217s - 21.397s] help
+  [21.397s - 21.537s] you
+  [21.537s - 21.677s] with
+  [21.677s - 21.837s] that
+  [21.837s - 22.417s] today.
+  [22.417s - 22.577s] Did
+  [22.577s - 22.677s] you
+  [22.677s - 23.017s] receive
+  [23.017s - 23.197s] a
+  [23.197s - 23.437s] mailer
+  [23.437s - 23.677s] from
+  [23.677s - 23.937s] us?
+
+[23.981s - 30.365s] SPEAKER_01 (Confidence: 1.0):
+I did. Do you need the customer number? Yes, please. Okay. Do you need the customer number? Yes, please. Okay. It's 15243.
+Word-level timestamps:
+  [24.058s - 24.138s] I
+  [24.138s - 24.798s] did.
+  [24.938s - 25.158s] Do
+  [25.158s - 25.218s] you
+  [25.218s - 25.378s] need
+  [25.378s - 25.518s] the
+  [25.518s - 25.878s] customer
+  [25.878s - 26.378s] number?
+  [26.558s - 26.838s] Yes,
+  [26.838s - 27.258s] please.
+  [27.478s - 27.898s] Okay.
+  [24.828s - 25.148s] Do
+  [25.148s - 25.228s] you
+  [25.228s - 25.368s] need
+  [25.368s - 25.528s] the
+  [25.528s - 25.868s] customer
+  [25.868s - 26.408s] number?
+  [26.668s - 26.828s] Yes,
+  [26.828s - 27.268s] please.
+  [27.488s - 27.888s] Okay.
+  [28.128s - 28.348s] It's
+  [28.348s - 30.108s] 15243.
+
+[26.477s - 27.207s] SPEAKER_00 (Confidence: 1.0):
+Yes, please.
+Word-level timestamps:
+  [26.547s - 26.827s] Yes,
+  [26.857s - 26.957s] please.
+
+[30.84s - 33.625s] SPEAKER_00 (Confidence: 1.0):
+Thank you. And the year, make and model of your vehicle?
+Word-level timestamps:
+  [30.93s - 31.03s] Thank
+  [31.03s - 31.31s] you.
+  [31.69s - 31.73s] And
+  [31.73s - 31.93s] the
+  [31.93s - 32.19s] year,
+  [32.19s - 32.31s] make
+  [32.31s - 32.39s] and
+  [32.39s - 32.59s] model
+  [32.59s - 32.77s] of
+  [32.77s - 32.85s] your
+  [32.85s - 33.35s] vehicle?
+
+[33.642s - 37.02s] SPEAKER_01 (Confidence: 1.0):
+Yeah. I have a 2009 Nissan Altima. Yeah,
+Word-level timestamps:
+  [33.685s - 33.985s] Yeah.
+  [33.985s - 34.065s] I
+  [34.065s - 34.305s] have
+  [34.305s - 34.465s] a
+  [34.465s - 35.305s] 2009
+  [35.305s - 36.065s] Nissan
+  [36.065s - 36.825s] Altima.
+  [34.765s - 37.465s] Yeah,
+
+[37.462s - 38.362s] SPEAKER_00 (Confidence: 1.0):
+Oh, nice[private_person].
+Word-level timestamps:
+  [37.487s - 37.767s] Oh,
+  [37.767s - 37.907s] nice
+  [37.907s - 38.327s] [private_person]
+
+[38.718s - 40.45s] SPEAKER_01 (Confidence: 1.0):
+Yeah. Thank you. thank you. We really enjoy it.
+Word-level timestamps:
+  [38.743s - 39.063s] Yeah.
+  [39.083s - 39.303s] Thank
+  [39.303s - 39.523s] you.
+  [39.163s - 39.263s] thank
+  [39.263s - 39.503s] you.
+  [39.563s - 39.583s] We
+  [39.583s - 39.783s] really
+  [39.783s - 40.043s] enjoy
+  [40.043s - 40.423s] it.
+
+[40.076s - 46.511s] SPEAKER_00 (Confidence: 1.0):
+Okay. I think I found your profile here. Can I have you verify your address and phone number, please?
+Word-level timestamps:
+  [40.061s - 40.301s] Okay.
+  [41.441s - 41.481s] I
+  [41.481s - 41.661s] think
+  [41.661s - 41.801s] I
+  [41.801s - 42.001s] found
+  [41.981s - 42.141s] your
+  [42.141s - 42.581s] profile
+  [42.581s - 43.181s] here.
+  [43.341s - 43.421s] Can
+  [43.421s - 43.501s] I
+  [43.501s - 43.641s] have
+  [43.641s - 43.741s] you
+  [43.741s - 44.121s] verify
+  [44.121s - 44.321s] your
+  [44.321s - 44.841s] address
+  [44.841s - 45.161s] and
+  [45.161s - 45.541s] phone
+  [45.541s - 45.901s] number,
+  [45.901s - 46.221s] please?
+
+[46.579s - 58.124s] SPEAKER_01 (Confidence: 1.0):
+Yes, it's [private_address][private_address], and my phone number is[private_phone][private_phone]. Well,
+Word-level timestamps:
+  [46.672s - 47.492s] Yes,
+  [47.492s - 47.692s] it's
+  [47.692s - 48.492s] [private_address]
+  [48.492s - 49.012s] [private_address]
+  [49.012s - 49.572s] [private_address]
+  [49.572s - 50.252s] [private_address]
+  [50.692s - 50.952s] [private_address]
+  [50.952s - 51.032s] [private_address]
+  [51.032s - 51.542s] [private_address]
+  [51.542s - 51.782s] [private_address]
+  [51.782s - 53.462s] [private_address]
+  [53.462s - 54.042s] and
+  [54.042s - 54.182s] my
+  [54.182s - 54.382s] phone
+  [54.382s - 54.682s] number
+  [54.682s - 55.002s] is
+  [55.002s - 55.662s] [private_phone]
+  [55.662s - 56.722s] [private_phone]
+  [56.722s - 57.742s] [private_phone]
+  [55.932s - 59.132s] Well,
+
+[58.43s - 74.626s] SPEAKER_00 (Confidence: 1.0):
+Thanks,[private_person]. I located your information. The newest version we have available for your vehicle is version 7 .7 which was released in March of 2012. The price of the new map is $99 plus shipping and tax. Let me go ahead and set up this order for you.
+Word-level timestamps:
+  [58.66s - 58.84s] Thanks,
+  [58.84s - 59.02s] [private_person]
+  [59.02s - 59.1s] I
+  [59.1s - 59.48s] located
+  [59.48s - 59.66s] your
+  [59.66s - 60.44s] information.
+  [61.12s - 61.26s] The
+  [61.26s - 61.5s] newest
+  [61.5s - 61.82s] version
+  [61.82s - 61.98s] we
+  [61.99s - 62.15s] have
+  [62.15s - 62.55s] available
+  [62.55s - 62.77s] for
+  [62.77s - 62.91s] your
+  [62.91s - 63.27s] vehicle
+  [63.27s - 63.51s] is
+  [63.65s - 63.83s] version
+  [63.83s - 64.19s] 7
+  [64.19s - 64.87s] .7
+  [64.87s - 65.13s] which
+  [65.13s - 65.35s] was
+  [65.35s - 65.85s] released
+  [65.85s - 66.23s] in
+  [66.23s - 66.57s] March
+  [66.62s - 66.82s] of
+  [66.82s - 68.1s] 2012.
+  [68.58s - 68.64s] The
+  [68.64s - 68.92s] price
+  [68.92s - 69.08s] of
+  [69.08s - 69.18s] the
+  [69.18s - 69.3s] new
+  [69.3s - 69.5s] map
+  [69.5s - 69.7s] is
+  [69.7s - 70.26s] $99
+  [70.26s - 70.82s] plus
+  [70.82s - 71.12s] shipping
+  [71.12s - 71.28s] and
+  [71.28s - 71.92s] tax.
+  [72.36s - 72.46s] Let
+  [72.46s - 72.56s] me
+  [72.56s - 72.7s] go
+  [72.7s - 72.86s] ahead
+  [72.86s - 73.02s] and
+  [73.02s - 73.2s] set
+  [73.2s - 73.28s] up
+  [73.28s - 73.42s] this
+  [73.42s - 73.6s] order
+  [73.6s - 73.78s] for
+  [73.78s - 74.2s] you.
+
+[74.626s - 78.786s] SPEAKER_01 (Confidence: 1.0):
+can we wait just a second? I'm not really sure if I can afford it right now.
+Word-level timestamps:
+  [75.634s - 75.814s] can
+  [75.814s - 75.934s] we
+  [75.934s - 76.114s] wait
+  [76.114s - 76.254s] just
+  [76.254s - 76.354s] a
+  [76.354s - 76.574s] second?
+  [76.574s - 76.794s] I'm
+  [76.794s - 76.934s] not
+  [76.934s - 77.154s] really
+  [77.154s - 77.334s] sure
+  [77.334s - 77.474s] if
+  [77.474s - 77.534s] I
+  [77.534s - 77.634s] can
+  [77.634s - 77.934s] afford
+  [77.934s - 78.054s] it
+  [78.054s - 78.234s] right
+  [78.234s - 78.674s] now.
+
+[79.346s - 102.233s] SPEAKER_00 (Confidence: 1.0):
+Alright, well here are a few reasons to consider purchasing today. It looks as though you haven't updated your vehicle for three years. So that would be the equivalent of getting three years' worth of updates for the price of one. Oh, okay. In addition, special offers like the current promotion don't come around too often. I would definitely recommend taking advantage of the extra $50 off before it expires.
+Word-level timestamps:
+  [79.44s - 79.82s] Alright,
+  [79.82s - 80.02s] well
+  [80.02s - 80.34s] here
+  [80.32s - 80.52s] are
+  [80.52s - 80.64s] a
+  [80.64s - 80.78s] few
+  [80.78s - 81.1s] reasons
+  [81.1s - 81.32s] to
+  [81.32s - 81.66s] consider
+  [81.66s - 82.12s] purchasing
+  [82.12s - 83.0s] today.
+  [83.68s - 83.8s] It
+  [83.8s - 84.0s] looks
+  [84.0s - 84.16s] as
+  [84.16s - 84.28s] though
+  [84.28s - 84.4s] you
+  [84.4s - 84.7s] haven't
+  [84.7s - 85.04s] updated
+  [85.05s - 85.25s] your
+  [85.25s - 85.59s] vehicle
+  [85.59s - 85.81s] for
+  [85.81s - 86.11s] three
+  [86.11s - 86.73s] years.
+  [87.13s - 87.23s] So
+  [87.23s - 87.39s] that
+  [87.39s - 87.53s] would
+  [87.53s - 87.73s] be
+  [87.73s - 87.95s] the
+  [87.95s - 88.33s] equivalent
+  [88.33s - 88.57s] of
+  [88.57s - 88.79s] getting
+  [88.79s - 89.09s] three
+  [89.09s - 89.51s] years'
+  [89.51s - 89.53s] worth
+  [89.53s - 89.67s] of
+  [89.67s - 89.99s] updates
+  [89.99s - 90.23s] for
+  [90.23s - 90.31s] the
+  [90.31s - 90.59s] price
+  [90.59s - 90.73s] of
+  [90.73s - 91.15s] one.
+  [91.21s - 91.55s] Oh,
+  [91.55s - 92.01s] okay.
+  [92.41s - 92.57s] In
+  [92.57s - 93.11s] addition,
+  [93.2s - 93.46s] special
+  [93.46s - 93.78s] offers
+  [93.78s - 94.02s] like
+  [94.02s - 94.16s] the
+  [94.16s - 94.4s] current
+  [94.4s - 94.84s] promotion
+  [94.92s - 95.36s] don't
+  [95.36s - 95.52s] come
+  [95.52s - 95.72s] around
+  [95.72s - 96.0s] too
+  [96.0s - 96.6s] often.
+  [97.0s - 97.12s] I
+  [97.12s - 97.28s] would
+  [97.28s - 97.76s] definitely
+  [97.76s - 98.18s] recommend
+  [98.18s - 98.54s] taking
+  [98.54s - 98.96s] advantage
+  [98.96s - 99.16s] of
+  [99.16s - 99.28s] the
+  [99.28s - 99.58s] extra
+  [99.58s - 100.12s] $50
+  [100.12s - 100.74s] off
+  [100.74s - 101.1s] before
+  [101.1s - 101.26s] it
+  [101.26s - 102.04s] expires.
+
+[91.316s - 91.893s] SPEAKER_01 (Confidence: 1.0):
+Oh, okay.
+Word-level timestamps:
+  [91.344s - 91.624s] Oh,
+  [91.624s - 91.924s] okay.
+
+[102.402s - 104.151s] SPEAKER_01 (Confidence: 1.0):
+Yeah, that does sound pretty good. Yeah, that does sound pretty good.
+Word-level timestamps:
+  [102.493s - 102.853s] Yeah,
+  [102.853s - 102.973s] that
+  [102.973s - 103.193s] does
+  [103.193s - 103.433s] sound
+  [103.433s - 103.653s] pretty
+  [103.653s - 104.113s] good.
+  [102.133s - 102.873s] Yeah,
+  [102.873s - 102.973s] that
+  [102.973s - 103.193s] does
+  [103.193s - 103.433s] sound
+  [103.433s - 103.633s] pretty
+  [103.633s - 104.133s] good.
+
+[104.847s - 113.251s] SPEAKER_00 (Confidence: 1.0):
+If I set this order up for you now, it'll ship out today and for $50 less. Do you have your credit card handy and I can place this order for you now.
+Word-level timestamps:
+  [104.814s - 104.954s] If
+  [104.954s - 104.994s] I
+  [104.994s - 105.174s] set
+  [105.174s - 105.354s] this
+  [105.354s - 105.554s] order
+  [105.554s - 105.734s] up
+  [105.734s - 105.874s] for
+  [105.874s - 105.994s] you
+  [105.994s - 106.394s] now,
+  [106.394s - 106.734s] it'll
+  [106.734s - 106.934s] ship
+  [106.934s - 107.074s] out
+  [107.074s - 107.574s] today
+  [107.574s - 108.134s] and
+  [108.134s - 108.354s] for
+  [108.364s - 108.744s] $50
+  [108.744s - 109.724s] less.
+  [109.724s - 110.384s] Do
+  [110.384s - 110.464s] you
+  [110.464s - 110.564s] have
+  [110.564s - 110.664s] your
+  [110.664s - 110.884s] credit
+  [110.884s - 111.044s] card
+  [111.044s - 111.424s] handy
+  [111.424s - 111.684s] and
+  [111.684s - 111.904s] I
+  [111.904s - 112.024s] can
+  [112.024s - 112.224s] place
+  [112.224s - 112.364s] this
+  [112.364s - 112.544s] order
+  [112.544s - 112.744s] for
+  [112.744s - 112.884s] you
+  [112.884s - 113.224s] now.
+
+[113.693s - 118.379s] SPEAKER_01 (Confidence: 1.0):
+Yeah, let's, uh... Yeah, let's go ahead and use a visa.
+Word-level timestamps:
+  [113.735s - 114.115s] Yeah,
+  [114.115s - 114.395s] let's,
+  [114.395s - 114.855s] uh...
+  [113.735s - 114.135s] Yeah,
+  [114.135s - 114.335s] let's
+  [114.335s - 115.715s] go
+  [115.715s - 115.855s] ahead
+  [115.855s - 115.935s] and
+  [115.935s - 116.055s] use
+  [116.055s - 116.135s] a
+  [116.135s - 116.695s] visa.
+

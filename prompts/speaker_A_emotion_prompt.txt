@@ -1,0 +1,12 @@
+Listen to the provided audio track for Speaker A. All personal details have been beeped out for privacy.
+Evaluate Speaker A's tone and delivery on the following parameters:
+1. Overall Emotion
+2. Confidence level (0-100)
+3. Frustration level (0-100)
+4. Personal info remaining? (Yes or No)
+
+Return your response as a JSON object with EXACTLY these keys:
+- "emotion": string (a short description of their emotion)
+- "confidence": integer (0-100)
+- "frustration": integer (0-100)
+- "personal_info_remaining": string ("Yes" or "No")

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  voice-api:
+    build: .
+    container_name: voice-api-container
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the local environment file
+      - ./.env:/app/.env
+      # Persist session data, static audio, and editable prompts
+      - ./data/sessions:/app/data/sessions
+      - ./static/audio:/app/static/audio
+      - ./prompts:/app/prompts
+    environment:
+      # Use expand_segments memory allocation for PyTorch to reduce fragmentation OOMs
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped

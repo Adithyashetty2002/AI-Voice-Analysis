@@ -1,0 +1,16 @@
+Evaluate the following scrubbed transcript on these parameters:
+1. Was the issue resolved? (Yes or No)
+2. Understandability percentage (0-100)
+3. Knowledgeable (0-100)
+4. Empathy (0-100)
+5. Personal info remaining? (Yes or No)
+
+Return your response as a JSON object with EXACTLY these keys:
+- "issue_resolved": string ("Yes" or "No")
+- "understandability_percentage": integer (0-100)
+- "knowledgeable": integer (0-100)
+- "empathy": integer (0-100)
+- "personal_info_remaining": string ("Yes" or "No")
+
+Transcript:
+{transcript_text}

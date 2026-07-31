@@ -1,0 +1,1053 @@
+/* Outlook Fluent Design CSS Variables & Tokens */
+:root {
+    --outlook-blue: #0078d4;
+    --outlook-blue-hover: #106ebe;
+    --outlook-blue-selected: #deecf9;
+    --outlook-green: #107c41;
+    --bg-navbar: #111214;
+    --bg-inbox: #18191b;
+    --bg-reading: #202124;
+    --border-color: #2b2c2f;
+    --text-primary: #f5f5f5;
+    --text-secondary: #a1a1a1;
+    --text-muted: #616161;
+    --card-bg: rgba(32, 33, 36, 0.6);
+    --card-border: rgba(255, 255, 255, 0.05);
+    --accent-red: #d13438;
+    --accent-yellow: #ffb900;
+    --accent-green: #107c41;
+}
+
+body.light-theme {
+    --bg-navbar: #f8f9fb;
+    --bg-inbox: #ffffff;
+    --bg-reading: #f3f5f8;
+    --border-color: #e6e9f0;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(0, 0, 0, 0.05);
+    --outlook-blue-selected: #eff6ff;
+    /* Extra light mode specific variables for shadow and vibrancy */
+    --card-shadow: 0 4px 24px -6px rgba(15, 23, 42, 0.08);
+}
+
+/* Global Reset & Base Setup */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-reading);
+    color: var(--text-primary);
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    -webkit-overflow-scrolling: touch;
+}
+
+.outlook-app {
+    display: flex;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* Splitter Resizer */
+.resizer {
+    width: 5px;
+    background-color: transparent;
+    cursor: col-resize;
+    z-index: 5;
+    transition: background-color 0.2s ease;
+    border-left: 1px solid var(--border-color);
+}
+
+.resizer:hover, .resizer.dragging {
+    background-color: var(--outlook-blue);
+    border-color: var(--outlook-blue);
+}
+
+/* 1. Outlook Sidebar (Extreme Left) */
+.outlook-navbar {
+    width: 50px;
+    background-color: var(--bg-navbar);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-right: 1px solid var(--border-color);
+    z-index: 10;
+}
+
+.nav-item {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.nav-item.active {
+    background-color: var(--outlook-blue-selected);
+    color: var(--outlook-blue);
+}
+
+/* 2. Inbox List Pane (Left-Inner) */
+.outlook-inbox {
+    width: 320px;
+    background-color: var(--bg-inbox);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    height: 100vh;
+}
+
+.inbox-header {
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.inbox-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.fluent-btn-primary {
+    background-color: var(--outlook-blue);
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.fluent-btn-primary:hover {
+    background-color: var(--outlook-blue-hover);
+}
+
+.fluent-btn-primary:active {
+    transform: scale(0.98);
+}
+
+.inbox-search {
+    padding: 0 16px 15px 16px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-reading);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    gap: 8px;
+    color: var(--text-secondary);
+}
+
+.search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    width: 100%;
+    font-size: 13px;
+}
+
+.session-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 8px;
+}
+
+.session-item {
+    padding: 14px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid transparent;
+}
+
+.session-item:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.session-item.selected {
+    background-color: var(--outlook-blue-selected);
+    border-color: rgba(0, 120, 212, 0.2);
+}
+
+.session-item.selected .session-title,
+.session-item.selected .session-meta,
+.session-item.selected .session-desc {
+    color: var(--text-primary);
+}
+
+.session-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.session-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 80%;
+    color: var(--text-primary);
+}
+
+.score-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: #ffffff;
+}
+
+.score-badge.high { background-color: var(--accent-green); }
+.score-badge.mid { background-color: var(--accent-yellow); color: #202124; }
+.score-badge.low { background-color: var(--accent-red); }
+
+.session-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
+
+.session-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* 3. Reading/Scoring Pane (Right Main Area) */
+.outlook-reading-pane {
+    flex: 1;
+    background-color: var(--bg-reading);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 15px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 20px;
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: var(--text-muted);
+}
+
+.empty-state h1 {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.reading-pane-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+/* Header Toolbar */
+.reading-toolbar {
+    height: 48px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-badge {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 8px;
+    color: var(--text-secondary);
+}
+
+.toolbar-btn {
+    background: none;
+    border: none;
+    outline: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toolbar-btn:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.toolbar-btn.delete-btn:hover {
+    background-color: rgba(209, 52, 56, 0.15);
+    color: #ff3b30;
+}
+
+/* Header Info */
+.reading-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.reading-header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.session-sender-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--outlook-blue), #50e4ff);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.sender-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sender-text strong {
+    font-size: 14px;
+}
+
+.sender-text span {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Scrollable Body Content */
+.reading-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Card Widget and Highlight styles */
+.fluent-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    box-shadow: var(--card-shadow, none);
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fluent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow, 0 8px 32px rgba(0, 0, 0, 0.2));
+}
+
+.fluent-card.highlight-card {
+    background: linear-gradient(135deg, rgba(0, 120, 212, 0.08), rgba(80, 228, 255, 0.03));
+    border-color: rgba(0, 120, 212, 0.2);
+}
+
+.card-icon {
+    font-size: 24px;
+    color: var(--outlook-blue);
+    display: flex;
+    align-items: flex-start;
+}
+
+.card-content h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.card-content p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.recommendations-list {
+    margin-left: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.mt-15 { margin-top: 15px; }
+
+/* Diarization Timeline Visualizer */
+.timeline-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.timeline-visualizer {
+    height: 36px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.timeline-segment {
+    height: 100%;
+    position: absolute;
+    top: 0;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.timeline-segment:hover {
+    opacity: 0.8;
+}
+
+.timeline-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+/* Speaker Scorecards Grid */
+.section-divider {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: var(--border-color);
+}
+
+.speaker-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.speaker-scorecard-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: var(--card-shadow, none);
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.speaker-scorecard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow, 0 8px 32px rgba(0, 0, 0, 0.2));
+}
+
+.speaker-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.speaker-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.metric-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metric-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.metric-bar-container {
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.metric-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background-color: var(--outlook-blue);
+}
+
+.metric-tags-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.metric-tags-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tag-chip {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.tag-chip.strength {
+    background-color: rgba(16, 124, 65, 0.1);
+    color: #107c41;
+}
+
+.tag-chip.improvement {
+    background-color: rgba(209, 52, 56, 0.1);
+    color: #d13438;
+}
+
+/* Transcript turns layout */
+.transcript-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.transcript-turn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: var(--card-shadow, none);
+    transition: all 0.2s ease;
+}
+
+.transcript-turn:hover {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.turn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.turn-speaker-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.turn-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.turn-time {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.turn-play-btn {
+    background: none;
+    border: none;
+    color: var(--outlook-blue);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(0, 120, 212, 0.08);
+    transition: all 0.2s ease;
+}
+
+.turn-play-btn:hover {
+    background-color: var(--outlook-blue);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.turn-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+/* 4. Fluent UI Modal Dialog */
+.fluent-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.fluent-modal.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background-color: var(--bg-reading);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 480px;
+    max-width: 90vw;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-header i {
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.form-group input[type="text"] {
+    background-color: var(--bg-inbox);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: var(--text-primary);
+    outline: none;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.drag-drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.drag-drop-zone:hover, .drag-drop-zone.dragover {
+    background-color: rgba(0, 120, 212, 0.03);
+    border-color: var(--outlook-blue);
+}
+
+.drag-drop-zone i {
+    font-size: 32px;
+    color: var(--text-muted);
+}
+
+.drag-drop-zone p {
+    font-size: 13px;
+}
+
+.drag-drop-zone p span {
+    color: var(--outlook-blue);
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+.file-info {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.full-width {
+    width: 100%;
+}
+
+.hidden { display: none !important; }
+
+/* 5. Progress Overlay Panel */
+.progress-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.progress-panel.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.progress-card {
+    background-color: var(--bg-reading);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 400px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.progress-card h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.progress-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--outlook-blue), #50e4ff);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.progress-meta {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Spinner and Animation classes */
+.fluent-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(255, 255, 255, 0.05);
+    border-top: 3px solid var(--outlook-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* -------------------------------------------
+   RESPONSIVENESS & MOBILE LAYOUT OVERRIDES 
+   ------------------------------------------- */
+
+/* Make outlook-app container responsive */
+.outlook-app {
+    flex-direction: row;
+}
+
+.mobile-back-btn {
+    display: none !important;
+}
+
+@media screen and (max-width: 1024px) {
+    .outlook-inbox {
+        width: 260px; /* slightly smaller inbox on tablet */
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .outlook-app {
+        flex-direction: column;
+    }
+    
+    .resizer {
+        display: none !important;
+    }
+    
+    /* Ensure panels take full width and handle their own height properly */
+    #agentListPane, #agentDetailsPane, #recordingAnalysisPane {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100vh;
+        height: 100dvh;
+        border-right: none;
+        order: 1;
+    }
+    
+    /* Master-Detail Visibility Logic */
+    /* By default (state-agent-list), show agentListPane only */
+    .outlook-app:not(.state-agent-details):not(.state-recording-analysis) #agentDetailsPane,
+    .outlook-app:not(.state-agent-details):not(.state-recording-analysis) #recordingAnalysisPane {
+        display: none !important;
+    }
+    
+    /* state-agent-details: show agentDetailsPane only */
+    .outlook-app.state-agent-details #agentListPane,
+    .outlook-app.state-agent-details #recordingAnalysisPane {
+        display: none !important;
+    }
+    
+    /* state-recording-analysis: show recordingAnalysisPane only */
+    .outlook-app.state-recording-analysis #agentListPane,
+    .outlook-app.state-recording-analysis #agentDetailsPane {
+        display: none !important;
+    }
+    
+    .mobile-back-btn {
+        display: inline-flex !important;
+    }
+    
+    .reading-toolbar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px 16px;
+        gap: 10px;
+    }
+    
+    .reading-header h1 {
+        font-size: 18px;
+    }
+    
+    .reading-header, .reading-body {
+        padding: 16px;
+    }
+    
+    .speaker-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Enhancing Micro-animations & Fluidity */
+.fluent-card {
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.fluent-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow, 0 12px 40px rgba(0, 0, 0, 0.15));
+}
+
+.session-item {
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.session-item:hover {
+    transform: translateX(4px);
+}
+
+/* Ensure flex parents don't break charts */
+.reading-pane-content {
+    min-height: 0; /* Important for flex child to allow inner scroll/chart resize */
+}
+
+/* Fade in for tab switching */
+.outlook-reading-pane:not(.hidden) {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+

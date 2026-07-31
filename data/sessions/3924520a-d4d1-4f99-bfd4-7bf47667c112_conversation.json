@@ -1,0 +1,1977 @@
+[
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 8.039,
+        "turn_end": 11.18,
+        "duration_seconds": 3.14,
+        "confidence": 1.0,
+        "text": "Thank you for calling Nissan. My name is Lauren. Can I have your name?",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_0.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Thank",
+                "start": 8.039,
+                "end": 8.159
+            },
+            {
+                "word": "you",
+                "start": 8.159,
+                "end": 8.279
+            },
+            {
+                "word": "for",
+                "start": 8.279,
+                "end": 8.379
+            },
+            {
+                "word": "calling",
+                "start": 8.379,
+                "end": 8.659
+            },
+            {
+                "word": "Nissan.",
+                "start": 8.659,
+                "end": 9.339
+            },
+            {
+                "word": "My",
+                "start": 9.459,
+                "end": 9.479
+            },
+            {
+                "word": "name",
+                "start": 9.479,
+                "end": 9.559
+            },
+            {
+                "word": "is",
+                "start": 9.559,
+                "end": 9.719
+            },
+            {
+                "word": "Lauren.",
+                "start": 9.719,
+                "end": 10.239
+            },
+            {
+                "word": "Can",
+                "start": 10.319,
+                "end": 10.479
+            },
+            {
+                "word": "I",
+                "start": 10.479,
+                "end": 10.559
+            },
+            {
+                "word": "have",
+                "start": 10.559,
+                "end": 10.699
+            },
+            {
+                "word": "your",
+                "start": 10.699,
+                "end": 10.819
+            },
+            {
+                "word": "name?",
+                "start": 10.819,
+                "end": 11.119
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 11.503,
+        "turn_end": 12.912,
+        "duration_seconds": 1.41,
+        "confidence": 1.0,
+        "text": "Yeah, my name is John Smith.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_0.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yeah,",
+                "start": 11.503,
+                "end": 11.723
+            },
+            {
+                "word": "my",
+                "start": 11.723,
+                "end": 11.803
+            },
+            {
+                "word": "name",
+                "start": 11.803,
+                "end": 11.923
+            },
+            {
+                "word": "is",
+                "start": 11.923,
+                "end": 12.123
+            },
+            {
+                "word": "John",
+                "start": 12.123,
+                "end": 12.363
+            },
+            {
+                "word": "Smith.",
+                "start": 12.363,
+                "end": 12.943
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 14.015,
+        "turn_end": 15.577,
+        "duration_seconds": 1.56,
+        "confidence": 1.0,
+        "text": "Thank you, John. How can I help you?",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_1.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Thank",
+                "start": 14.154,
+                "end": 14.194
+            },
+            {
+                "word": "you,",
+                "start": 14.194,
+                "end": 14.434
+            },
+            {
+                "word": "John.",
+                "start": 14.434,
+                "end": 14.734
+            },
+            {
+                "word": "How",
+                "start": 14.734,
+                "end": 14.794
+            },
+            {
+                "word": "can",
+                "start": 14.794,
+                "end": 14.934
+            },
+            {
+                "word": "I",
+                "start": 14.934,
+                "end": 15.014
+            },
+            {
+                "word": "help",
+                "start": 15.014,
+                "end": 15.174
+            },
+            {
+                "word": "you?",
+                "start": 15.174,
+                "end": 15.434
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 15.883,
+        "turn_end": 20.297,
+        "duration_seconds": 4.41,
+        "confidence": 1.0,
+        "text": "I was just calling about to see how much it would cost to update the map in my car.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_1.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "I",
+                "start": 16.054,
+                "end": 16.054
+            },
+            {
+                "word": "was",
+                "start": 16.054,
+                "end": 16.374
+            },
+            {
+                "word": "just",
+                "start": 16.374,
+                "end": 16.474
+            },
+            {
+                "word": "calling",
+                "start": 16.474,
+                "end": 16.774
+            },
+            {
+                "word": "about",
+                "start": 16.774,
+                "end": 17.074
+            },
+            {
+                "word": "to",
+                "start": 17.074,
+                "end": 17.274
+            },
+            {
+                "word": "see",
+                "start": 17.274,
+                "end": 17.574
+            },
+            {
+                "word": "how",
+                "start": 17.574,
+                "end": 17.854
+            },
+            {
+                "word": "much",
+                "start": 17.854,
+                "end": 18.014
+            },
+            {
+                "word": "it",
+                "start": 18.014,
+                "end": 18.114
+            },
+            {
+                "word": "would",
+                "start": 18.114,
+                "end": 18.234
+            },
+            {
+                "word": "cost",
+                "start": 18.234,
+                "end": 18.554
+            },
+            {
+                "word": "to",
+                "start": 18.554,
+                "end": 18.714
+            },
+            {
+                "word": "update",
+                "start": 18.714,
+                "end": 19.014
+            },
+            {
+                "word": "the",
+                "start": 19.014,
+                "end": 19.174
+            },
+            {
+                "word": "map",
+                "start": 19.174,
+                "end": 19.414
+            },
+            {
+                "word": "in",
+                "start": 19.414,
+                "end": 19.534
+            },
+            {
+                "word": "my",
+                "start": 19.534,
+                "end": 19.694
+            },
+            {
+                "word": "car.",
+                "start": 19.694,
+                "end": 20.174
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 20.62,
+        "turn_end": 23.947,
+        "duration_seconds": 3.33,
+        "confidence": 1.0,
+        "text": "I'd be happy to help you with that today. Did you receive a mailer from us?",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_2.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "I'd",
+                "start": 20.637,
+                "end": 20.797
+            },
+            {
+                "word": "be",
+                "start": 20.797,
+                "end": 20.857
+            },
+            {
+                "word": "happy",
+                "start": 20.857,
+                "end": 21.037
+            },
+            {
+                "word": "to",
+                "start": 21.037,
+                "end": 21.217
+            },
+            {
+                "word": "help",
+                "start": 21.217,
+                "end": 21.397
+            },
+            {
+                "word": "you",
+                "start": 21.397,
+                "end": 21.537
+            },
+            {
+                "word": "with",
+                "start": 21.537,
+                "end": 21.677
+            },
+            {
+                "word": "that",
+                "start": 21.677,
+                "end": 21.837
+            },
+            {
+                "word": "today.",
+                "start": 21.837,
+                "end": 22.417
+            },
+            {
+                "word": "Did",
+                "start": 22.417,
+                "end": 22.577
+            },
+            {
+                "word": "you",
+                "start": 22.577,
+                "end": 22.677
+            },
+            {
+                "word": "receive",
+                "start": 22.677,
+                "end": 23.017
+            },
+            {
+                "word": "a",
+                "start": 23.017,
+                "end": 23.197
+            },
+            {
+                "word": "mailer",
+                "start": 23.197,
+                "end": 23.437
+            },
+            {
+                "word": "from",
+                "start": 23.437,
+                "end": 23.677
+            },
+            {
+                "word": "us?",
+                "start": 23.677,
+                "end": 23.937
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 23.981,
+        "turn_end": 30.365,
+        "duration_seconds": 6.38,
+        "confidence": 1.0,
+        "text": "I did. Do you need the customer number? Yes, please. Okay. Do you need the customer number? Yes, please. Okay. It's 15243.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_2.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "I",
+                "start": 24.058,
+                "end": 24.138
+            },
+            {
+                "word": "did.",
+                "start": 24.138,
+                "end": 24.798
+            },
+            {
+                "word": "Do",
+                "start": 24.938,
+                "end": 25.158
+            },
+            {
+                "word": "you",
+                "start": 25.158,
+                "end": 25.218
+            },
+            {
+                "word": "need",
+                "start": 25.218,
+                "end": 25.378
+            },
+            {
+                "word": "the",
+                "start": 25.378,
+                "end": 25.518
+            },
+            {
+                "word": "customer",
+                "start": 25.518,
+                "end": 25.878
+            },
+            {
+                "word": "number?",
+                "start": 25.878,
+                "end": 26.378
+            },
+            {
+                "word": "Yes,",
+                "start": 26.558,
+                "end": 26.838
+            },
+            {
+                "word": "please.",
+                "start": 26.838,
+                "end": 27.258
+            },
+            {
+                "word": "Okay.",
+                "start": 27.478,
+                "end": 27.898
+            },
+            {
+                "word": "Do",
+                "start": 24.828,
+                "end": 25.148
+            },
+            {
+                "word": "you",
+                "start": 25.148,
+                "end": 25.228
+            },
+            {
+                "word": "need",
+                "start": 25.228,
+                "end": 25.368
+            },
+            {
+                "word": "the",
+                "start": 25.368,
+                "end": 25.528
+            },
+            {
+                "word": "customer",
+                "start": 25.528,
+                "end": 25.868
+            },
+            {
+                "word": "number?",
+                "start": 25.868,
+                "end": 26.408
+            },
+            {
+                "word": "Yes,",
+                "start": 26.668,
+                "end": 26.828
+            },
+            {
+                "word": "please.",
+                "start": 26.828,
+                "end": 27.268
+            },
+            {
+                "word": "Okay.",
+                "start": 27.488,
+                "end": 27.888
+            },
+            {
+                "word": "It's",
+                "start": 28.128,
+                "end": 28.348
+            },
+            {
+                "word": "15243.",
+                "start": 28.348,
+                "end": 30.108
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 26.477,
+        "turn_end": 27.207,
+        "duration_seconds": 0.73,
+        "confidence": 1.0,
+        "text": "Yes, please.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_3.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yes,",
+                "start": 26.547,
+                "end": 26.827
+            },
+            {
+                "word": "please.",
+                "start": 26.857,
+                "end": 26.957
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 30.84,
+        "turn_end": 33.625,
+        "duration_seconds": 2.79,
+        "confidence": 1.0,
+        "text": "Thank you. And the year, make and model of your vehicle?",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_4.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Thank",
+                "start": 30.93,
+                "end": 31.03
+            },
+            {
+                "word": "you.",
+                "start": 31.03,
+                "end": 31.31
+            },
+            {
+                "word": "And",
+                "start": 31.69,
+                "end": 31.73
+            },
+            {
+                "word": "the",
+                "start": 31.73,
+                "end": 31.93
+            },
+            {
+                "word": "year,",
+                "start": 31.93,
+                "end": 32.19
+            },
+            {
+                "word": "make",
+                "start": 32.19,
+                "end": 32.31
+            },
+            {
+                "word": "and",
+                "start": 32.31,
+                "end": 32.39
+            },
+            {
+                "word": "model",
+                "start": 32.39,
+                "end": 32.59
+            },
+            {
+                "word": "of",
+                "start": 32.59,
+                "end": 32.77
+            },
+            {
+                "word": "your",
+                "start": 32.77,
+                "end": 32.85
+            },
+            {
+                "word": "vehicle?",
+                "start": 32.85,
+                "end": 33.35
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 33.642,
+        "turn_end": 37.02,
+        "duration_seconds": 3.38,
+        "confidence": 1.0,
+        "text": "Yeah. I have a 2009 Nissan Altima. Yeah,",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_3.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yeah.",
+                "start": 33.685,
+                "end": 33.985
+            },
+            {
+                "word": "I",
+                "start": 33.985,
+                "end": 34.065
+            },
+            {
+                "word": "have",
+                "start": 34.065,
+                "end": 34.305
+            },
+            {
+                "word": "a",
+                "start": 34.305,
+                "end": 34.465
+            },
+            {
+                "word": "2009",
+                "start": 34.465,
+                "end": 35.305
+            },
+            {
+                "word": "Nissan",
+                "start": 35.305,
+                "end": 36.065
+            },
+            {
+                "word": "Altima.",
+                "start": 36.065,
+                "end": 36.825
+            },
+            {
+                "word": "Yeah,",
+                "start": 34.765,
+                "end": 37.465
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 37.462,
+        "turn_end": 38.362,
+        "duration_seconds": 0.9,
+        "confidence": 1.0,
+        "text": "Oh, nice car.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_5.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Oh,",
+                "start": 37.487,
+                "end": 37.767
+            },
+            {
+                "word": "nice",
+                "start": 37.767,
+                "end": 37.907
+            },
+            {
+                "word": "car.",
+                "start": 37.907,
+                "end": 38.327
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 38.718,
+        "turn_end": 40.45,
+        "duration_seconds": 1.73,
+        "confidence": 1.0,
+        "text": "Yeah. Thank you. thank you. We really enjoy it.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_4.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yeah.",
+                "start": 38.743,
+                "end": 39.063
+            },
+            {
+                "word": "Thank",
+                "start": 39.083,
+                "end": 39.303
+            },
+            {
+                "word": "you.",
+                "start": 39.303,
+                "end": 39.523
+            },
+            {
+                "word": "thank",
+                "start": 39.163,
+                "end": 39.263
+            },
+            {
+                "word": "you.",
+                "start": 39.263,
+                "end": 39.503
+            },
+            {
+                "word": "We",
+                "start": 39.563,
+                "end": 39.583
+            },
+            {
+                "word": "really",
+                "start": 39.583,
+                "end": 39.783
+            },
+            {
+                "word": "enjoy",
+                "start": 39.783,
+                "end": 40.043
+            },
+            {
+                "word": "it.",
+                "start": 40.043,
+                "end": 40.423
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 40.076,
+        "turn_end": 46.511,
+        "duration_seconds": 6.44,
+        "confidence": 1.0,
+        "text": "Okay. I think I found your profile here. Can I have you verify your address and phone number, please?",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_6.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Okay.",
+                "start": 40.061,
+                "end": 40.301
+            },
+            {
+                "word": "I",
+                "start": 41.441,
+                "end": 41.481
+            },
+            {
+                "word": "think",
+                "start": 41.481,
+                "end": 41.661
+            },
+            {
+                "word": "I",
+                "start": 41.661,
+                "end": 41.801
+            },
+            {
+                "word": "found",
+                "start": 41.801,
+                "end": 42.001
+            },
+            {
+                "word": "your",
+                "start": 41.981,
+                "end": 42.141
+            },
+            {
+                "word": "profile",
+                "start": 42.141,
+                "end": 42.581
+            },
+            {
+                "word": "here.",
+                "start": 42.581,
+                "end": 43.181
+            },
+            {
+                "word": "Can",
+                "start": 43.341,
+                "end": 43.421
+            },
+            {
+                "word": "I",
+                "start": 43.421,
+                "end": 43.501
+            },
+            {
+                "word": "have",
+                "start": 43.501,
+                "end": 43.641
+            },
+            {
+                "word": "you",
+                "start": 43.641,
+                "end": 43.741
+            },
+            {
+                "word": "verify",
+                "start": 43.741,
+                "end": 44.121
+            },
+            {
+                "word": "your",
+                "start": 44.121,
+                "end": 44.321
+            },
+            {
+                "word": "address",
+                "start": 44.321,
+                "end": 44.841
+            },
+            {
+                "word": "and",
+                "start": 44.841,
+                "end": 45.161
+            },
+            {
+                "word": "phone",
+                "start": 45.161,
+                "end": 45.541
+            },
+            {
+                "word": "number,",
+                "start": 45.541,
+                "end": 45.901
+            },
+            {
+                "word": "please?",
+                "start": 45.901,
+                "end": 46.221
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 46.579,
+        "turn_end": 58.124,
+        "duration_seconds": 11.55,
+        "confidence": 1.0,
+        "text": "Yes, it's 1255 North Research Way. That's in Orem, Utah 84097, and my phone number is A01 -431 -1000. Well,",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_5.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yes,",
+                "start": 46.672,
+                "end": 47.492
+            },
+            {
+                "word": "it's",
+                "start": 47.492,
+                "end": 47.692
+            },
+            {
+                "word": "1255",
+                "start": 47.692,
+                "end": 48.492
+            },
+            {
+                "word": "North",
+                "start": 48.492,
+                "end": 49.012
+            },
+            {
+                "word": "Research",
+                "start": 49.012,
+                "end": 49.572
+            },
+            {
+                "word": "Way.",
+                "start": 49.572,
+                "end": 50.252
+            },
+            {
+                "word": "That's",
+                "start": 50.692,
+                "end": 50.952
+            },
+            {
+                "word": "in",
+                "start": 50.952,
+                "end": 51.032
+            },
+            {
+                "word": "Orem,",
+                "start": 51.032,
+                "end": 51.542
+            },
+            {
+                "word": "Utah",
+                "start": 51.542,
+                "end": 51.782
+            },
+            {
+                "word": "84097,",
+                "start": 51.782,
+                "end": 53.462
+            },
+            {
+                "word": "and",
+                "start": 53.462,
+                "end": 54.042
+            },
+            {
+                "word": "my",
+                "start": 54.042,
+                "end": 54.182
+            },
+            {
+                "word": "phone",
+                "start": 54.182,
+                "end": 54.382
+            },
+            {
+                "word": "number",
+                "start": 54.382,
+                "end": 54.682
+            },
+            {
+                "word": "is",
+                "start": 54.682,
+                "end": 55.002
+            },
+            {
+                "word": "A01",
+                "start": 55.002,
+                "end": 55.662
+            },
+            {
+                "word": "-431",
+                "start": 55.662,
+                "end": 56.722
+            },
+            {
+                "word": "-1000.",
+                "start": 56.722,
+                "end": 57.742
+            },
+            {
+                "word": "Well,",
+                "start": 55.932,
+                "end": 59.132
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 58.43,
+        "turn_end": 74.626,
+        "duration_seconds": 16.2,
+        "confidence": 1.0,
+        "text": "Thanks, John. I located your information. The newest version we have available for your vehicle is version 7 .7 which was released in March of 2012. The price of the new map is $99 plus shipping and tax. Let me go ahead and set up this order for you.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_7.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Thanks,",
+                "start": 58.66,
+                "end": 58.84
+            },
+            {
+                "word": "John.",
+                "start": 58.84,
+                "end": 59.02
+            },
+            {
+                "word": "I",
+                "start": 59.02,
+                "end": 59.1
+            },
+            {
+                "word": "located",
+                "start": 59.1,
+                "end": 59.48
+            },
+            {
+                "word": "your",
+                "start": 59.48,
+                "end": 59.66
+            },
+            {
+                "word": "information.",
+                "start": 59.66,
+                "end": 60.44
+            },
+            {
+                "word": "The",
+                "start": 61.12,
+                "end": 61.26
+            },
+            {
+                "word": "newest",
+                "start": 61.26,
+                "end": 61.5
+            },
+            {
+                "word": "version",
+                "start": 61.5,
+                "end": 61.82
+            },
+            {
+                "word": "we",
+                "start": 61.82,
+                "end": 61.98
+            },
+            {
+                "word": "have",
+                "start": 61.99,
+                "end": 62.15
+            },
+            {
+                "word": "available",
+                "start": 62.15,
+                "end": 62.55
+            },
+            {
+                "word": "for",
+                "start": 62.55,
+                "end": 62.77
+            },
+            {
+                "word": "your",
+                "start": 62.77,
+                "end": 62.91
+            },
+            {
+                "word": "vehicle",
+                "start": 62.91,
+                "end": 63.27
+            },
+            {
+                "word": "is",
+                "start": 63.27,
+                "end": 63.51
+            },
+            {
+                "word": "version",
+                "start": 63.65,
+                "end": 63.83
+            },
+            {
+                "word": "7",
+                "start": 63.83,
+                "end": 64.19
+            },
+            {
+                "word": ".7",
+                "start": 64.19,
+                "end": 64.87
+            },
+            {
+                "word": "which",
+                "start": 64.87,
+                "end": 65.13
+            },
+            {
+                "word": "was",
+                "start": 65.13,
+                "end": 65.35
+            },
+            {
+                "word": "released",
+                "start": 65.35,
+                "end": 65.85
+            },
+            {
+                "word": "in",
+                "start": 65.85,
+                "end": 66.23
+            },
+            {
+                "word": "March",
+                "start": 66.23,
+                "end": 66.57
+            },
+            {
+                "word": "of",
+                "start": 66.62,
+                "end": 66.82
+            },
+            {
+                "word": "2012.",
+                "start": 66.82,
+                "end": 68.1
+            },
+            {
+                "word": "The",
+                "start": 68.58,
+                "end": 68.64
+            },
+            {
+                "word": "price",
+                "start": 68.64,
+                "end": 68.92
+            },
+            {
+                "word": "of",
+                "start": 68.92,
+                "end": 69.08
+            },
+            {
+                "word": "the",
+                "start": 69.08,
+                "end": 69.18
+            },
+            {
+                "word": "new",
+                "start": 69.18,
+                "end": 69.3
+            },
+            {
+                "word": "map",
+                "start": 69.3,
+                "end": 69.5
+            },
+            {
+                "word": "is",
+                "start": 69.5,
+                "end": 69.7
+            },
+            {
+                "word": "$99",
+                "start": 69.7,
+                "end": 70.26
+            },
+            {
+                "word": "plus",
+                "start": 70.26,
+                "end": 70.82
+            },
+            {
+                "word": "shipping",
+                "start": 70.82,
+                "end": 71.12
+            },
+            {
+                "word": "and",
+                "start": 71.12,
+                "end": 71.28
+            },
+            {
+                "word": "tax.",
+                "start": 71.28,
+                "end": 71.92
+            },
+            {
+                "word": "Let",
+                "start": 72.36,
+                "end": 72.46
+            },
+            {
+                "word": "me",
+                "start": 72.46,
+                "end": 72.56
+            },
+            {
+                "word": "go",
+                "start": 72.56,
+                "end": 72.7
+            },
+            {
+                "word": "ahead",
+                "start": 72.7,
+                "end": 72.86
+            },
+            {
+                "word": "and",
+                "start": 72.86,
+                "end": 73.02
+            },
+            {
+                "word": "set",
+                "start": 73.02,
+                "end": 73.2
+            },
+            {
+                "word": "up",
+                "start": 73.2,
+                "end": 73.28
+            },
+            {
+                "word": "this",
+                "start": 73.28,
+                "end": 73.42
+            },
+            {
+                "word": "order",
+                "start": 73.42,
+                "end": 73.6
+            },
+            {
+                "word": "for",
+                "start": 73.6,
+                "end": 73.78
+            },
+            {
+                "word": "you.",
+                "start": 73.78,
+                "end": 74.2
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 74.626,
+        "turn_end": 78.786,
+        "duration_seconds": 4.16,
+        "confidence": 1.0,
+        "text": "can we wait just a second? I'm not really sure if I can afford it right now.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_6.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "can",
+                "start": 75.634,
+                "end": 75.814
+            },
+            {
+                "word": "we",
+                "start": 75.814,
+                "end": 75.934
+            },
+            {
+                "word": "wait",
+                "start": 75.934,
+                "end": 76.114
+            },
+            {
+                "word": "just",
+                "start": 76.114,
+                "end": 76.254
+            },
+            {
+                "word": "a",
+                "start": 76.254,
+                "end": 76.354
+            },
+            {
+                "word": "second?",
+                "start": 76.354,
+                "end": 76.574
+            },
+            {
+                "word": "I'm",
+                "start": 76.574,
+                "end": 76.794
+            },
+            {
+                "word": "not",
+                "start": 76.794,
+                "end": 76.934
+            },
+            {
+                "word": "really",
+                "start": 76.934,
+                "end": 77.154
+            },
+            {
+                "word": "sure",
+                "start": 77.154,
+                "end": 77.334
+            },
+            {
+                "word": "if",
+                "start": 77.334,
+                "end": 77.474
+            },
+            {
+                "word": "I",
+                "start": 77.474,
+                "end": 77.534
+            },
+            {
+                "word": "can",
+                "start": 77.534,
+                "end": 77.634
+            },
+            {
+                "word": "afford",
+                "start": 77.634,
+                "end": 77.934
+            },
+            {
+                "word": "it",
+                "start": 77.934,
+                "end": 78.054
+            },
+            {
+                "word": "right",
+                "start": 78.054,
+                "end": 78.234
+            },
+            {
+                "word": "now.",
+                "start": 78.234,
+                "end": 78.674
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 79.346,
+        "turn_end": 102.233,
+        "duration_seconds": 22.89,
+        "confidence": 1.0,
+        "text": "Alright, well here are a few reasons to consider purchasing today. It looks as though you haven't updated your vehicle for three years. So that would be the equivalent of getting three years' worth of updates for the price of one. Oh, okay. In addition, special offers like the current promotion don't come around too often. I would definitely recommend taking advantage of the extra $50 off before it expires.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_8.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Alright,",
+                "start": 79.44,
+                "end": 79.82
+            },
+            {
+                "word": "well",
+                "start": 79.82,
+                "end": 80.02
+            },
+            {
+                "word": "here",
+                "start": 80.02,
+                "end": 80.34
+            },
+            {
+                "word": "are",
+                "start": 80.32,
+                "end": 80.52
+            },
+            {
+                "word": "a",
+                "start": 80.52,
+                "end": 80.64
+            },
+            {
+                "word": "few",
+                "start": 80.64,
+                "end": 80.78
+            },
+            {
+                "word": "reasons",
+                "start": 80.78,
+                "end": 81.1
+            },
+            {
+                "word": "to",
+                "start": 81.1,
+                "end": 81.32
+            },
+            {
+                "word": "consider",
+                "start": 81.32,
+                "end": 81.66
+            },
+            {
+                "word": "purchasing",
+                "start": 81.66,
+                "end": 82.12
+            },
+            {
+                "word": "today.",
+                "start": 82.12,
+                "end": 83.0
+            },
+            {
+                "word": "It",
+                "start": 83.68,
+                "end": 83.8
+            },
+            {
+                "word": "looks",
+                "start": 83.8,
+                "end": 84.0
+            },
+            {
+                "word": "as",
+                "start": 84.0,
+                "end": 84.16
+            },
+            {
+                "word": "though",
+                "start": 84.16,
+                "end": 84.28
+            },
+            {
+                "word": "you",
+                "start": 84.28,
+                "end": 84.4
+            },
+            {
+                "word": "haven't",
+                "start": 84.4,
+                "end": 84.7
+            },
+            {
+                "word": "updated",
+                "start": 84.7,
+                "end": 85.04
+            },
+            {
+                "word": "your",
+                "start": 85.05,
+                "end": 85.25
+            },
+            {
+                "word": "vehicle",
+                "start": 85.25,
+                "end": 85.59
+            },
+            {
+                "word": "for",
+                "start": 85.59,
+                "end": 85.81
+            },
+            {
+                "word": "three",
+                "start": 85.81,
+                "end": 86.11
+            },
+            {
+                "word": "years.",
+                "start": 86.11,
+                "end": 86.73
+            },
+            {
+                "word": "So",
+                "start": 87.13,
+                "end": 87.23
+            },
+            {
+                "word": "that",
+                "start": 87.23,
+                "end": 87.39
+            },
+            {
+                "word": "would",
+                "start": 87.39,
+                "end": 87.53
+            },
+            {
+                "word": "be",
+                "start": 87.53,
+                "end": 87.73
+            },
+            {
+                "word": "the",
+                "start": 87.73,
+                "end": 87.95
+            },
+            {
+                "word": "equivalent",
+                "start": 87.95,
+                "end": 88.33
+            },
+            {
+                "word": "of",
+                "start": 88.33,
+                "end": 88.57
+            },
+            {
+                "word": "getting",
+                "start": 88.57,
+                "end": 88.79
+            },
+            {
+                "word": "three",
+                "start": 88.79,
+                "end": 89.09
+            },
+            {
+                "word": "years'",
+                "start": 89.09,
+                "end": 89.51
+            },
+            {
+                "word": "worth",
+                "start": 89.51,
+                "end": 89.53
+            },
+            {
+                "word": "of",
+                "start": 89.53,
+                "end": 89.67
+            },
+            {
+                "word": "updates",
+                "start": 89.67,
+                "end": 89.99
+            },
+            {
+                "word": "for",
+                "start": 89.99,
+                "end": 90.23
+            },
+            {
+                "word": "the",
+                "start": 90.23,
+                "end": 90.31
+            },
+            {
+                "word": "price",
+                "start": 90.31,
+                "end": 90.59
+            },
+            {
+                "word": "of",
+                "start": 90.59,
+                "end": 90.73
+            },
+            {
+                "word": "one.",
+                "start": 90.73,
+                "end": 91.15
+            },
+            {
+                "word": "Oh,",
+                "start": 91.21,
+                "end": 91.55
+            },
+            {
+                "word": "okay.",
+                "start": 91.55,
+                "end": 92.01
+            },
+            {
+                "word": "In",
+                "start": 92.41,
+                "end": 92.57
+            },
+            {
+                "word": "addition,",
+                "start": 92.57,
+                "end": 93.11
+            },
+            {
+                "word": "special",
+                "start": 93.2,
+                "end": 93.46
+            },
+            {
+                "word": "offers",
+                "start": 93.46,
+                "end": 93.78
+            },
+            {
+                "word": "like",
+                "start": 93.78,
+                "end": 94.02
+            },
+            {
+                "word": "the",
+                "start": 94.02,
+                "end": 94.16
+            },
+            {
+                "word": "current",
+                "start": 94.16,
+                "end": 94.4
+            },
+            {
+                "word": "promotion",
+                "start": 94.4,
+                "end": 94.84
+            },
+            {
+                "word": "don't",
+                "start": 94.92,
+                "end": 95.36
+            },
+            {
+                "word": "come",
+                "start": 95.36,
+                "end": 95.52
+            },
+            {
+                "word": "around",
+                "start": 95.52,
+                "end": 95.72
+            },
+            {
+                "word": "too",
+                "start": 95.72,
+                "end": 96.0
+            },
+            {
+                "word": "often.",
+                "start": 96.0,
+                "end": 96.6
+            },
+            {
+                "word": "I",
+                "start": 97.0,
+                "end": 97.12
+            },
+            {
+                "word": "would",
+                "start": 97.12,
+                "end": 97.28
+            },
+            {
+                "word": "definitely",
+                "start": 97.28,
+                "end": 97.76
+            },
+            {
+                "word": "recommend",
+                "start": 97.76,
+                "end": 98.18
+            },
+            {
+                "word": "taking",
+                "start": 98.18,
+                "end": 98.54
+            },
+            {
+                "word": "advantage",
+                "start": 98.54,
+                "end": 98.96
+            },
+            {
+                "word": "of",
+                "start": 98.96,
+                "end": 99.16
+            },
+            {
+                "word": "the",
+                "start": 99.16,
+                "end": 99.28
+            },
+            {
+                "word": "extra",
+                "start": 99.28,
+                "end": 99.58
+            },
+            {
+                "word": "$50",
+                "start": 99.58,
+                "end": 100.12
+            },
+            {
+                "word": "off",
+                "start": 100.12,
+                "end": 100.74
+            },
+            {
+                "word": "before",
+                "start": 100.74,
+                "end": 101.1
+            },
+            {
+                "word": "it",
+                "start": 101.1,
+                "end": 101.26
+            },
+            {
+                "word": "expires.",
+                "start": 101.26,
+                "end": 102.04
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 91.316,
+        "turn_end": 91.893,
+        "duration_seconds": 0.58,
+        "confidence": 1.0,
+        "text": "Oh, okay.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_7.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Oh,",
+                "start": 91.344,
+                "end": 91.624
+            },
+            {
+                "word": "okay.",
+                "start": 91.624,
+                "end": 91.924
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 102.402,
+        "turn_end": 104.151,
+        "duration_seconds": 1.75,
+        "confidence": 1.0,
+        "text": "Yeah, that does sound pretty good. Yeah, that does sound pretty good.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_8.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yeah,",
+                "start": 102.493,
+                "end": 102.853
+            },
+            {
+                "word": "that",
+                "start": 102.853,
+                "end": 102.973
+            },
+            {
+                "word": "does",
+                "start": 102.973,
+                "end": 103.193
+            },
+            {
+                "word": "sound",
+                "start": 103.193,
+                "end": 103.433
+            },
+            {
+                "word": "pretty",
+                "start": 103.433,
+                "end": 103.653
+            },
+            {
+                "word": "good.",
+                "start": 103.653,
+                "end": 104.113
+            },
+            {
+                "word": "Yeah,",
+                "start": 102.133,
+                "end": 102.873
+            },
+            {
+                "word": "that",
+                "start": 102.873,
+                "end": 102.973
+            },
+            {
+                "word": "does",
+                "start": 102.973,
+                "end": 103.193
+            },
+            {
+                "word": "sound",
+                "start": 103.193,
+                "end": 103.433
+            },
+            {
+                "word": "pretty",
+                "start": 103.433,
+                "end": 103.633
+            },
+            {
+                "word": "good.",
+                "start": 103.633,
+                "end": 104.133
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_00",
+        "turn_start": 104.847,
+        "turn_end": 113.251,
+        "duration_seconds": 8.4,
+        "confidence": 1.0,
+        "text": "If I set this order up for you now, it'll ship out today and for $50 less. Do you have your credit card handy and I can place this order for you now.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_00_turn_9.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "If",
+                "start": 104.814,
+                "end": 104.954
+            },
+            {
+                "word": "I",
+                "start": 104.954,
+                "end": 104.994
+            },
+            {
+                "word": "set",
+                "start": 104.994,
+                "end": 105.174
+            },
+            {
+                "word": "this",
+                "start": 105.174,
+                "end": 105.354
+            },
+            {
+                "word": "order",
+                "start": 105.354,
+                "end": 105.554
+            },
+            {
+                "word": "up",
+                "start": 105.554,
+                "end": 105.734
+            },
+            {
+                "word": "for",
+                "start": 105.734,
+                "end": 105.874
+            },
+            {
+                "word": "you",
+                "start": 105.874,
+                "end": 105.994
+            },
+            {
+                "word": "now,",
+                "start": 105.994,
+                "end": 106.394
+            },
+            {
+                "word": "it'll",
+                "start": 106.394,
+                "end": 106.734
+            },
+            {
+                "word": "ship",
+                "start": 106.734,
+                "end": 106.934
+            },
+            {
+                "word": "out",
+                "start": 106.934,
+                "end": 107.074
+            },
+            {
+                "word": "today",
+                "start": 107.074,
+                "end": 107.574
+            },
+            {
+                "word": "and",
+                "start": 107.574,
+                "end": 108.134
+            },
+            {
+                "word": "for",
+                "start": 108.134,
+                "end": 108.354
+            },
+            {
+                "word": "$50",
+                "start": 108.364,
+                "end": 108.744
+            },
+            {
+                "word": "less.",
+                "start": 108.744,
+                "end": 109.724
+            },
+            {
+                "word": "Do",
+                "start": 109.724,
+                "end": 110.384
+            },
+            {
+                "word": "you",
+                "start": 110.384,
+                "end": 110.464
+            },
+            {
+                "word": "have",
+                "start": 110.464,
+                "end": 110.564
+            },
+            {
+                "word": "your",
+                "start": 110.564,
+                "end": 110.664
+            },
+            {
+                "word": "credit",
+                "start": 110.664,
+                "end": 110.884
+            },
+            {
+                "word": "card",
+                "start": 110.884,
+                "end": 111.044
+            },
+            {
+                "word": "handy",
+                "start": 111.044,
+                "end": 111.424
+            },
+            {
+                "word": "and",
+                "start": 111.424,
+                "end": 111.684
+            },
+            {
+                "word": "I",
+                "start": 111.684,
+                "end": 111.904
+            },
+            {
+                "word": "can",
+                "start": 111.904,
+                "end": 112.024
+            },
+            {
+                "word": "place",
+                "start": 112.024,
+                "end": 112.224
+            },
+            {
+                "word": "this",
+                "start": 112.224,
+                "end": 112.364
+            },
+            {
+                "word": "order",
+                "start": 112.364,
+                "end": 112.544
+            },
+            {
+                "word": "for",
+                "start": 112.544,
+                "end": 112.744
+            },
+            {
+                "word": "you",
+                "start": 112.744,
+                "end": 112.884
+            },
+            {
+                "word": "now.",
+                "start": 112.884,
+                "end": 113.224
+            }
+        ]
+    },
+    {
+        "speaker": "SPEAKER_01",
+        "turn_start": 113.693,
+        "turn_end": 118.379,
+        "duration_seconds": 4.69,
+        "confidence": 1.0,
+        "text": "Yeah, let's, uh... Yeah, let's go ahead and use a visa.",
+        "voice_clip_url": "/static/audio/3924520a-d4d1-4f99-bfd4-7bf47667c112/speaker_SPEAKER_01_turn_9.wav",
+        "raw_word_timestamps": [
+            {
+                "word": "Yeah,",
+                "start": 113.735,
+                "end": 114.115
+            },
+            {
+                "word": "let's,",
+                "start": 114.115,
+                "end": 114.395
+            },
+            {
+                "word": "uh...",
+                "start": 114.395,
+                "end": 114.855
+            },
+            {
+                "word": "Yeah,",
+                "start": 113.735,
+                "end": 114.135
+            },
+            {
+                "word": "let's",
+                "start": 114.135,
+                "end": 114.335
+            },
+            {
+                "word": "go",
+                "start": 114.335,
+                "end": 115.715
+            },
+            {
+                "word": "ahead",
+                "start": 115.715,
+                "end": 115.855
+            },
+            {
+                "word": "and",
+                "start": 115.855,
+                "end": 115.935
+            },
+            {
+                "word": "use",
+                "start": 115.935,
+                "end": 116.055
+            },
+            {
+                "word": "a",
+                "start": 116.055,
+                "end": 116.135
+            },
+            {
+                "word": "visa.",
+                "start": 116.135,
+                "end": 116.695
+            }
+        ]
+    }
+]

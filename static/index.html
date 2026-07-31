@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outlook Voice Analytics - AI Speaker Scoring Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css?v=8">
+    <!-- Google Fonts for premium modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fluent UI Icons via CDN -->
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML2PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="light-theme">
+    <div class="outlook-app">
+        <!-- 1. Outlook Navigation Sidebar (Extreme Left) -->
+        <nav class="outlook-navbar" id="outlookNavbar">
+            <div class="navbar-top">
+                <div class="nav-item active" id="navMail" title="Voice Mail Inbox">
+                    <i class="ms-Icon ms-Icon--Mail" aria-hidden="true"></i>
+                </div>
+
+
+            </div>
+            <div class="navbar-bottom">
+                <!-- Theme toggle removed -->
+            </div>
+        </nav>
+
+        <!-- Panel 1: Agent List -->
+        <nav class="outlook-inbox" id="agentListPane" style="width: 250px; min-width: 200px; display: flex; flex-direction: column;">
+            <div class="inbox-header">
+                <h2>Agents</h2>
+                <button class="fluent-btn-primary" id="btnNewAnalysis" title="Upload New Session" style="min-width: 40px; padding: 0 10px;">
+                    <i class="ms-Icon ms-Icon--Add" aria-hidden="true"></i>
+                </button>
+                <button class="fluent-btn-secondary" id="btnBulkUpload" title="Bulk Upload (ZIP)" style="min-width: 40px; padding: 0 10px; margin-left: 5px; background: white; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; cursor: pointer;">
+                    <i class="ms-Icon ms-Icon--BulkUpload" aria-hidden="true"></i> Bulk
+                </button>
+            </div>
+            <div class="inbox-search">
+                <div class="search-box">
+                    <i class="ms-Icon ms-Icon--Search" aria-hidden="true"></i>
+                    <input type="text" id="searchAgents" placeholder="Search agents...">
+                </div>
+                <div style="padding: 10px 5px 0 5px; height: 100px; width: 100%;">
+                    <canvas id="allAgentsPerformanceChart"></canvas>
+                </div>
+            </div>
+            <div class="session-list" id="agentList">
+                <div class="loading-state">
+                    <div class="fluent-spinner"></div>
+                    <p>Loading agents...</p>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="resizer" id="resizer1"></div>
+
+        <!-- Panel 2: Agent Summary & Sessions -->
+        <section class="outlook-inbox" id="agentDetailsPane" style="width: 350px; min-width: 250px; display: flex; flex-direction: column; background-color: #faf9f8;">
+            <div class="inbox-header" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button class="toolbar-btn mobile-back-btn" id="btnBackToAgents" title="Back to Agents" style="display: none; padding: 0;">
+                            <i class="ms-Icon ms-Icon--Back" aria-hidden="true" style="font-size: 16px;"></i>
+                        </button>
+                        <h2 id="selectedAgentName" style="font-size: 18px; font-weight: 600; margin: 0;">Select an Agent</h2>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="fluent-btn-primary" id="btnUploadForAgent" title="Upload Call for this Agent" style="padding: 4px 8px; font-size: 13px;">
+                            <i class="ms-Icon ms-Icon--Upload" aria-hidden="true"></i> Upload Call
+                        </button>
+                        <button class="toolbar-btn" id="btnExportAgentPDF" title="Export Agent Report (PDF)" style="display: none; padding: 4px 8px;">
+                            <i class="ms-Icon ms-Icon--PDF" aria-hidden="true" style="color: var(--outlook-blue);"></i> PDF
+                        </button>
+                        <button class="toolbar-btn" id="btnExportAgentCSV" title="Export Agent Report (CSV)" style="display: none; padding: 4px 8px;">
+                            <i class="ms-Icon ms-Icon--ExcelDocument" aria-hidden="true" style="color: var(--excel-green);"></i> CSV
+                        </button>
+                    </div>
+                </div>
+                <select id="agentDateFilter" class="fluent-select" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: white;">
+                    <option value="7">Last 7 Days</option>
+                    <option value="14">Last 14 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="3650">All Time</option>
+                </select>
+            </div>
+            <div class="agent-summary-card" id="agentSummaryCard" style="padding: 15px 20px; background: white; border-bottom: 1px solid var(--border-color); display: none;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-secondary); font-size: 13px;">Total Calls</span>
+                    <strong id="agentSummaryCalls" style="color: var(--text-primary);">0</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-secondary); font-size: 13px;">Avg Score</span>
+                    <strong id="agentSummaryScore" style="color: var(--excel-green);">0%</strong>
+                </div>
+                <div style="margin-top: 12px; background: var(--bg-hover); padding: 12px; border-radius: 8px; border-left: 3px solid var(--outlook-blue);">
+                    <span style="color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; display: block;">Agent Tone & Emotional Summary</span>
+                    <div id="agentSummaryToneText" style="font-size: 13px; color: var(--text-primary); line-height: 1.6; font-style: italic;">
+                        <!-- JS injects words -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="session-list" id="agentSessionsList" style="flex: 1; overflow-y: auto;">
+                <div class="empty-state" style="padding: 30px 20px; text-align: center; color: var(--text-secondary);">
+                    <i class="ms-Icon ms-Icon--ContactInfo" style="font-size: 32px; margin-bottom: 10px; color: #c8c6c4;"></i>
+                    <p>Select an agent from the list to view their sessions.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="resizer" id="resizer2"></div>
+
+        <!-- Panel 3: Recording Analysis -->
+        <main class="outlook-reading-pane" id="recordingAnalysisPane" style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
+            <div class="empty-state" id="emptyState">
+                <i class="ms-Icon ms-Icon--Audio" aria-hidden="true"></i>
+                <h1>Select a Recording</h1>
+                <p>Select a session from the middle panel to view its detailed QA scorecard.</p>
+            </div>
+
+            <div class="reading-pane-content hidden" id="readingPaneContent">
+                <!-- Reading Header Toolbar -->
+                <div class="reading-toolbar">
+                    <div class="toolbar-left">
+                        <button class="toolbar-btn mobile-back-btn" id="btnMobileBack" title="Back to Sessions">
+                            <i class="ms-Icon ms-Icon--Back" aria-hidden="true"></i> Back
+                        </button>
+                        <span class="category-badge" id="sessionSpeakersCount">2 Speakers</span>
+                        <span class="category-badge" id="sessionDuration">00:00</span>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="toolbar-btn" id="btnExportSessionPDF" title="Export Scorecard (PDF)">
+                            <i class="ms-Icon ms-Icon--PDF" aria-hidden="true"></i> PDF
+                        </button>
+                        <button class="toolbar-btn" id="btnExportSessionCSV" title="Export Scorecard (CSV)">
+                            <i class="ms-Icon ms-Icon--ExcelDocument" aria-hidden="true"></i> CSV
+                        </button>
+                        <button class="toolbar-btn" id="btnViewGraphs" title="View Call Analytics Graphs">
+                            <i class="ms-Icon ms-Icon--DonutChart" aria-hidden="true"></i> View Graphs
+                        </button>
+                        <button class="toolbar-btn" id="btnReevaluateSession" title="Re-evaluate LLM Scorecard">
+                            <i class="ms-Icon ms-Icon--Refresh" aria-hidden="true"></i> Re-evaluate
+                        </button>
+                        <button class="toolbar-btn delete-btn" id="btnDeleteSession" title="Delete Session">
+                            <i class="ms-Icon ms-Icon--Delete" aria-hidden="true"></i> Delete
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Topic & Header Details -->
+                <div class="reading-header">
+                    <h1 id="sessionTopic">Session Topic Here</h1>
+                    <div class="session-sender-info">
+                        <div class="avatar-circle" id="senderAvatar">AI</div>
+                        <div class="sender-text">
+                            <strong id="sessionSenderName">Scored by AI</strong>
+                            <span id="sessionDetailsMeta">Session ID: abc-123 | Completed</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px; background: #f3f2f1; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 5px;">
+                            <i class="ms-Icon ms-Icon--Shield" aria-hidden="true" style="color: var(--excel-green);"></i> PII Scrubbed Audio Recording
+                        </span>
+                        <audio id="masterAudioPlayer" controls style="width: 100%; height: 36px; outline: none;"></audio>
+                    </div>
+                </div>
+
+                <!-- Scrollable Body Content -->
+                <div class="reading-body">
+                    <!-- Stage 5: QA Scorecard -->
+                    <div class="fluent-card highlight-card" id="qaScorecardCard" style="width: 100%;">
+                        <div class="card-icon" style="background-color: var(--outlook-blue);">
+                            <i class="ms-Icon ms-Icon--ClipboardList" aria-hidden="true" style="color: white;"></i>
+                        </div>
+                        <div class="card-content" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                                <h3>QA Scorecard Evaluation</h3>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 12px; color: var(--text-secondary);">Overall Score</span>
+                                    <div style="font-size: 24px; font-weight: bold; color: var(--excel-green);" id="qaOverallScore">0%</div>
+                                </div>
+                            </div>
+                            
+                            <div id="qaCategoriesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                                <!-- Categories injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="speaker-cards-grid" id="speakerCardsGrid">
+                        <!-- Speaker Scorecard Cards populated here -->
+                    </div>
+                    
+                    <!-- Transcript Panel -->
+                    <div class="fluent-card highlight-card" style="width: 100%; margin-top: 20px;">
+                        <div class="card-content" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="ms-Icon ms-Icon--TextDocument" aria-hidden="true" style="color: var(--outlook-blue); font-size: 18px;"></i>
+                                    <h3 style="margin: 0;">Call Transcript</h3>
+                                </div>
+                                <button class="fluent-btn-secondary" id="btnToggleTranscript" style="padding: 4px 12px; font-size: 12px;">Show Transcript</button>
+                            </div>
+                            <div id="transcriptContentContainer" style="display: none; max-height: 400px; overflow-y: auto; font-size: 14px; line-height: 1.6; padding: 10px; background: #faf9f8; border-radius: 6px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+
+    </div>
+    <!-- 4. "New Analysis" Modal -->
+    <div class="fluent-modal" id="newAnalysisModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Audio Analysis</h2>
+                <i class="ms-Icon ms-Icon--Cancel" id="modalClose" aria-hidden="true"></i>
+            </div>
+            <form id="newAnalysisForm">
+                <div class="form-group">
+                    <label>Audio File Recording</label>
+                    <div class="drag-drop-zone" id="dropZone">
+                        <i class="ms-Icon ms-Icon--CloudUpload" aria-hidden="true"></i>
+                        <p>Drag and drop your audio file here or <span>browse files</span></p>
+                        <span class="file-info" id="fileInfo">Supports MP3, WAV, M4A, FLAC</span>
+                        <input type="file" id="audioFileInput" accept="audio/*" class="hidden" required>
+                    </div>
+                </div>
+                <button type="submit" class="fluent-btn-primary full-width" id="btnSubmitAnalysis">
+                    <i class="ms-Icon ms-Icon--Play" aria-hidden="true"></i> Start Analysis
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div class="fluent-modal" id="bulkUploadModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Batch Upload Sessions</h2>
+                <i class="ms-Icon ms-Icon--Cancel" id="bulkModalClose" aria-hidden="true"></i>
+            </div>
+            <div style="padding: 15px; background: #f3f2f1; border-radius: 4px; margin-bottom: 15px; font-size: 13px;">
+                <strong>Instructions:</strong> Upload a <code>.zip</code> file containing your audio files along with a <code>metadata.csv</code> file.<br><br>
+                The <code>metadata.csv</code> must contain these headers: <strong>filename, agent_name, topic</strong><br>
+                Example: <code>call_01.wav, John Doe, Sales Call</code>
+            </div>
+            <form id="bulkUploadForm">
+                <div class="form-group">
+                    <label>ZIP File Archive</label>
+                    <div class="drag-drop-zone" id="bulkDropZone">
+                        <i class="ms-Icon ms-Icon--ZipFolder" aria-hidden="true" style="font-size: 32px; color: var(--outlook-blue);"></i>
+                        <p>Drag and drop your ZIP file here or <span>browse files</span></p>
+                        <span class="file-info" id="bulkFileInfo">Supports .ZIP only</span>
+                        <input type="file" id="bulkFileInput" accept=".zip" class="hidden" required>
+                    </div>
+                </div>
+                <button type="submit" class="fluent-btn-primary full-width" id="btnSubmitBulkAnalysis">
+                    <i class="ms-Icon ms-Icon--CloudUpload" aria-hidden="true"></i> Upload Batch
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. Call Analytics Graphs Modal -->
+    <div class="fluent-modal" id="graphsModal">
+        <div class="modal-content" style="max-width: 800px; width: 90vw; background: var(--bg-reading);">
+            <div class="modal-header">
+                <h2>Interactive Call Analytics</h2>
+                <i class="ms-Icon ms-Icon--Cancel" id="graphsModalClose" aria-hidden="true"></i>
+            </div>
+            <div id="graphsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; padding: 10px;">
+                <div style="background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center;">
+                    <h3 style="font-size: 15px; margin-bottom: 20px; color: var(--text-primary);">QA Performance Radar</h3>
+                    <div style="width: 100%; max-width: 300px; aspect-ratio: 1/1;">
+                        <canvas id="qaRadarChart"></canvas>
+                    </div>
+                </div>
+                <div style="background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center;">
+                    <h3 style="font-size: 15px; margin-bottom: 20px; color: var(--text-primary);">Emotion Intensity (Polar)</h3>
+                    <div style="width: 100%; max-width: 300px; aspect-ratio: 1/1;">
+                        <canvas id="emotionPolarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Processing / Analysis Overlay Panel -->
+    <div class="progress-panel" id="progressPanel">
+        <div class="progress-card">
+            <div class="card-icon pulse">
+                <i class="ms-Icon ms-Icon--Processing" aria-hidden="true"></i>
+            </div>
+            <h2>Running AI Voice Analysis</h2>
+            <p id="progressMessage">Initializing preprocessing and speech segmentation...</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+            </div>
+            <div class="progress-meta">
+                <span id="progressPercentage">0%</span>
+                <span>Takes ~30-60s for 30 min audio</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden global audio element for playing speaker turns -->
+    <audio id="speakerAudioPlayer" class="hidden"></audio>
+    
+    <script src="/static/app.js?v=17"></script>
+</body>
+</html>

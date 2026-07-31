@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<LLM_Output>
+  <Communication_Professionalism>
+    <Greeting_Customer_Verification>5</Greeting_Customer_Verification>
+    <Active_Listening_and_Empathy>4</Active_Listening_and_Empathy>
+    <Probing_the_issue>5</Probing_the_issue>
+    <Validating_Priority_of_the_issue>4</Validating_Priority_of_the_issue>
+  </Communication_Professionalism>
+  <Technical_Accuracy_Resolution>
+    <Accurate_troubleshooting_of_Issue>10</Accurate_troubleshooting_of_Issue>
+    <Accuracy_of_Solution_Provided>10</Accuracy_of_Solution_Provided>
+    <Valid_Escalation>5</Valid_Escalation>
+    <Use_of_Knowledge_Base>-1</Use_of_Knowledge_Base>
+  </Technical_Accuracy_Resolution>
+  <Process_Adherence>
+    <Critical_P1_Compliance>5</Critical_P1_Compliance>
+    <Ticket_Documentation_category_selection>10</Ticket_Documentation_category_selection>
+    <Time_entry_Agreement>5</Time_entry_Agreement>
+  </Process_Adherence>
+  <Customer_Experience>
+    <Ownership_of_Incident>5</Ownership_of_Incident>
+    <Communication_to_EU_Admin_stakeholders_within_timeline>10</Communication_to_EU_Admin_stakeholders_within_timeline>
+    <Proper_Closing_Confirmation_of_Satisfaction>5</Proper_Closing_Confirmation_of_Satisfaction>
+  </Customer_Experience>
+  <Efficiency_Metrics>
+    <First_Call_Resolution>5</First_Call_Resolution>
+    <_30_minute_rule>3</_30_minute_rule>
+    <Minimal_Transfers_Hold_Time>2</Minimal_Transfers_Hold_Time>
+  </Efficiency_Metrics>
+  <Overall_Score_Percentage>97</Overall_Score_Percentage>
+  <Technical_Reviewer_Feedback>The agent demonstrated strong communication and professionalism throughout the call. However, there was a slight lack of empathy when the customer expressed uncertainty about the cost, which could have been addressed with more reassurance. Overall, the agent effectively handled the inquiry and provided a clear solution.</Technical_Reviewer_Feedback>
+  <agent_speaker_label>SPEAKER_00</agent_speaker_label>
+  <agent_name>Lauren</agent_name>
+</LLM_Output>
