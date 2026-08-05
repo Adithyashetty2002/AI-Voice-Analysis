@@ -110,10 +110,14 @@ WORKSPACE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(WORKSPACE_DIR, "static")
 AUDIO_OUTPUT_DIR = os.path.join(STATIC_DIR, "audio")
 SESSIONS_DB_DIR = os.path.join(WORKSPACE_DIR, "data", "sessions")
+AGENTS_DB_FILE = os.path.join(WORKSPACE_DIR, "data", "agents.json")
 
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(AUDIO_OUTPUT_DIR, exist_ok=True)
 os.makedirs(SESSIONS_DB_DIR, exist_ok=True)
+if not os.path.exists(AGENTS_DB_FILE):
+    with open(AGENTS_DB_FILE, 'w') as f:
+        json.dump([], f)
 
 # Initialize FastAPI app
 app = FastAPI(title="AI Voice Analysis Server", description="Outlook-Style AI Speaker Evaluation Dashboard")
@@ -133,7 +137,7 @@ ACTIVE_TASKS: Dict[str, Dict[str, Any]] = {}
 # Initialize voice analysis pipeline
 pipeline = VoiceAnalysisPipeline()
 
-def run_analysis_task(session_id: str, temp_audio_path: str, topic: str):
+def run_analysis_task(session_id: str, temp_audio_path: str, topic: str, agent_name: str = None, agent_id: str = None):
     """
     Background job executing the 5-stage sequential voice analysis pipeline.
     """
@@ -157,6 +161,11 @@ def run_analysis_task(session_id: str, temp_audio_path: str, topic: str):
             output_base_dir=STATIC_DIR,  # Sliced clips saved inside static/audio/
             progress_callback=update_progress
         )
+        
+        if agent_name:
+            result["agent_name"] = agent_name
+        if agent_id:
+            result["agent_id"] = agent_id
         
         # Save session database file to disk
         session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
@@ -248,12 +257,11 @@ import time
 
 @app.post("/api/upload/bulk")
 async def bulk_upload_endpoint(
-    file: UploadFile = File(...)
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    agent_name: str = Form(None),
+    agent_id: str = Form(None)
 ):
-    """
-    Accepts a .zip file containing a metadata.csv and audio files.
-    Creates pending sessions for each valid row in the CSV.
-    """
     if not file.filename.endswith('.zip'):
         raise HTTPException(status_code=400, detail="Must upload a .zip file.")
         
@@ -265,44 +273,40 @@ async def bulk_upload_endpoint(
     extracted_sessions = []
     
     with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-        if 'metadata.csv' not in zip_ref.namelist():
-            os.remove(temp_zip_path)
-            raise HTTPException(status_code=400, detail="metadata.csv missing from ZIP.")
+        for filename in zip_ref.namelist():
+            if filename.startswith("__MACOSX") or not filename.lower().endswith(('.wav', '.mp3', '.m4a', '.flac')):
+                continue
+                
+            session_id = str(uuid.uuid4())
+            audio_path = os.path.join(WORKSPACE_DIR, "data", "temp", f"{session_id}_{os.path.basename(filename)}")
             
-        with zip_ref.open('metadata.csv') as csv_file:
-            content = csv_file.read().decode('utf-8')
-            reader = csv.DictReader(io.StringIO(content))
-            for row in reader:
-                filename = row.get("filename")
-                agent_name = row.get("agent_name", "Unknown Agent")
-                topic = row.get("topic", "No Topic")
+            with zip_ref.open(filename) as source, open(audio_path, "wb") as target:
+                shutil.copyfileobj(source, target)
                 
-                if not filename or filename not in zip_ref.namelist():
-                    continue
-                    
-                session_id = str(uuid.uuid4())
-                audio_path = os.path.join(WORKSPACE_DIR, "data", "temp", f"{session_id}_{filename}")
+            topic = os.path.basename(filename)
+            
+            session_data = {
+                "session_id": session_id,
+                "status": "pending",
+                "agent_name": agent_name or "Unknown Agent",
+                "agent_id": agent_id,
+                "topic": topic,
+                "created_at": time.time()
+            }
+            
+            session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
+            with open(session_file, "w", encoding="utf-8") as sf:
+                json.dump(session_data, sf, indent=2, ensure_ascii=False)
                 
-                # Extract specific file
-                with zip_ref.open(filename) as source, open(audio_path, "wb") as target:
-                    shutil.copyfileobj(source, target)
-                    
-                # Create pending session JSON
-                session_data = {
-                    "session_id": session_id,
-                    "status": "pending",
-                    "agent_name": agent_name,
-                    "topic": topic,
-                    "audio_path": audio_path,
-                    "created_at": time.time()
-                }
-                
-                session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-                with open(session_file, "w", encoding="utf-8") as sf:
-                    json.dump(session_data, sf, indent=2, ensure_ascii=False)
-                    
-                extracted_sessions.append(session_id)
-                
+            ACTIVE_TASKS[session_id] = {
+                "status": "pending",
+                "progress_message": "Queueing audio file analysis...",
+                "progress_percent": 0
+            }
+            
+            background_tasks.add_task(run_analysis_task, session_id, audio_path, topic, agent_name, agent_id)
+            extracted_sessions.append(session_id)
+            
     os.remove(temp_zip_path)
     return {"status": "success", "sessions_created": len(extracted_sessions)}
 
@@ -340,7 +344,9 @@ async def analyze_pending_endpoint(
 async def analyze_audio_endpoint(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    topic: str = Form(...)
+    topic: str = Form(...),
+    agent_name: str = Form(None),
+    agent_id: str = Form(None)
 ):
     """
     API endpoint for uploading audio files to start background scoring analysis.
@@ -367,7 +373,7 @@ async def analyze_audio_endpoint(
     }
     
     # Queue background task
-    background_tasks.add_task(run_analysis_task, session_id, temp_audio_path, topic)
+    background_tasks.add_task(run_analysis_task, session_id, temp_audio_path, topic, agent_name, agent_id)
     
     return {"session_id": session_id, "status": "processing"}
 
@@ -419,15 +425,135 @@ async def get_analysis_status(session_id: str):
         
     raise HTTPException(status_code=404, detail="Analysis session task not found.")
 
+@app.post("/api/agents/add")
+async def add_agent(agent_name: str = Form(...), agent_id: str = Form(None), location: str = Form(None), department: str = Form(None)):
+    final_id = agent_id.strip() if agent_id and agent_id.strip() else str(uuid.uuid4())
+    agents = []
+    if os.path.exists(AGENTS_DB_FILE):
+        with open(AGENTS_DB_FILE, "r") as f:
+            agents = json.load(f)
+
+    if not any(a.get("agent_id") == final_id for a in agents):
+        new_agent = {"agent_id": final_id, "agent_name": agent_name}
+        if location: new_agent["location"] = location.strip()
+        if department: new_agent["department"] = department.strip()
+        agents.append(new_agent)
+        with open(AGENTS_DB_FILE, "w") as f:
+            json.dump(agents, f, indent=2)
+        is_duplicate = False
+    else:
+        is_duplicate = True
+            
+    return {"status": "success", "agent_id": final_id, "agent_name": agent_name, "is_duplicate": is_duplicate}
+
+@app.post("/api/agents/bulk")
+async def bulk_add_agents(file: UploadFile = File(...)):
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Must upload a .csv file.")
+        
+    content = await file.read()
+    content_str = content.decode('utf-8')
+    import csv, io
+    reader = csv.DictReader(io.StringIO(content_str))
+    
+    agents = []
+    if os.path.exists(AGENTS_DB_FILE):
+        with open(AGENTS_DB_FILE, "r") as f:
+            agents = json.load(f)
+            
+    added_count = 0
+    rejected = []
+    for row in reader:
+        agent_name = row.get("agent_name")
+        csv_id = row.get("agent_email") or row.get("agent_id")
+        
+        if not agent_name or not agent_name.strip():
+            rejected.append({"agent_name": "", "agent_email": csv_id or "", "reason": "Missing agent_name"})
+            continue
+            
+        final_id = csv_id.strip() if csv_id and csv_id.strip() else str(uuid.uuid4())
+        
+        if any(a.get("agent_id") == final_id for a in agents):
+            rejected.append({"agent_name": agent_name.strip(), "agent_email": final_id, "reason": "Agent already exists"})
+        else:
+            new_agent = {"agent_id": final_id, "agent_name": agent_name.strip()}
+            if row.get("location"): new_agent["location"] = row.get("location").strip()
+            if row.get("department"): new_agent["department"] = row.get("department").strip()
+            agents.append(new_agent)
+            added_count += 1
+                
+    with open(AGENTS_DB_FILE, "w") as f:
+        json.dump(agents, f, indent=2)
+        
+    return {"status": "success", "agents_added": added_count, "rejected": rejected}
+
+@app.get("/api/agents/template")
+async def download_agent_template():
+    content = "agent_name,agent_email,location,department\n"
+    from fastapi.responses import Response
+    return Response(
+        content=content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=agents_template.csv"}
+    )
+
+@app.delete("/api/agents/{agent_id}")
+async def delete_agent(agent_id: str):
+    agents_list = []
+    if os.path.exists(AGENTS_DB_FILE):
+        with open(AGENTS_DB_FILE, "r") as f:
+            try:
+                agents_list = json.load(f)
+            except:
+                pass
+                
+    found = False
+    for a in agents_list:
+        if a.get("agent_id") == agent_id:
+            a["is_deleted"] = True
+            found = True
+            
+    if not found:
+        agents_list.append({
+            "agent_id": agent_id,
+            "agent_name": agent_id,
+            "is_deleted": True
+        })
+        
+    with open(AGENTS_DB_FILE, "w") as f:
+        json.dump(agents_list, f, indent=4)
+        
+    return {"status": "deleted"}
+
 @app.get("/api/agents")
 async def list_agents():
     """
     Retrieves a list of aggregated agents and their overall metrics.
     """
     agents = {}
-    
+
+    # Load standalone agents from JSON
+    if os.path.exists(AGENTS_DB_FILE):
+        try:
+            with open(AGENTS_DB_FILE, "r") as f:
+                standalone = json.load(f)
+                for sa in standalone:
+                    name = sa.get("agent_name", "Unknown Agent")
+                    aid = sa.get("agent_id") or name
+                    agents[aid] = {
+                        "agent_id": aid,
+                        "agent_name": name,
+                        "total_calls": 0,
+                        "analyzed_calls": 0,
+                        "sum_score": 0,
+                        "emotion_counts": {},
+                        "is_deleted": sa.get("is_deleted", False)
+                    }
+        except:
+            pass
+
     if not os.path.exists(SESSIONS_DB_DIR):
-        return []
+        return list(agents.values())
 
     for filename in os.listdir(SESSIONS_DB_DIR):
         if filename.endswith(".json") and "_speaker_" not in filename and "_conversation" not in filename and "_diarization" not in filename:
@@ -440,11 +566,12 @@ async def list_agents():
                 transcript_eval = stage5.get("transcript_evaluation", {})
                 
                 agent_name = data.get("agent_name") or transcript_eval.get("agent_name", "Unknown Agent")
-                
+                agent_id = data.get("agent_id") or agent_name
+
                 # Check for emotions from Smallest AI
                 emotions = stage5.get("speaker_emotions", {})
                 agent_speaker = transcript_eval.get("agent_speaker_label", "")
-                
+
                 emotion_str = "Neutral"
                 if agent_speaker and agent_speaker in emotions:
                     emotion_str = emotions[agent_speaker].get("emotion", "Neutral")
@@ -452,43 +579,59 @@ async def list_agents():
                 score = transcript_eval.get("overall_score_percentage", 0)
                 is_analyzed = data.get("status") == "success"
                 
-                if agent_name not in agents:
-                    agents[agent_name] = {
+                if agent_id not in agents:
+                    agents[agent_id] = {
+                        "agent_id": agent_id,
                         "agent_name": agent_name,
                         "total_calls": 0,
                         "analyzed_calls": 0,
                         "sum_score": 0,
-                        "emotion_counts": {}
+                        "emotion_counts": {},
+                        "is_deleted": False
                     }
                     
-                agents[agent_name]["total_calls"] += 1
+                agents[agent_id]["total_calls"] += 1
                 if is_analyzed:
-                    agents[agent_name]["analyzed_calls"] += 1
-                    agents[agent_name]["sum_score"] += score
-                    agents[agent_name]["emotion_counts"][emotion_str] = agents[agent_name]["emotion_counts"].get(emotion_str, 0) + 1
+                    agents[agent_id]["analyzed_calls"] += 1
+                    agents[agent_id]["sum_score"] += score
+                    agents[agent_id]["emotion_counts"][emotion_str] = agents[agent_id]["emotion_counts"].get(emotion_str, 0) + 1
                 
             except Exception as e:
                 logger.error(f"Error loading session file {filename}: {str(e)}")
                 
     result = []
-    for name, stats in agents.items():
+    for id, stats in agents.items():
         result.append({
-            "agent_name": name,
+            "agent_id": stats["agent_id"],
+            "agent_name": stats["agent_name"],
             "total_calls": stats["total_calls"],
             "analyzed_calls": stats["analyzed_calls"],
             "avg_score": round(stats["sum_score"] / stats["analyzed_calls"], 1) if stats["analyzed_calls"] > 0 else 0,
-            "emotion_counts": stats["emotion_counts"]
+            "emotion_counts": stats["emotion_counts"],
+            "is_deleted": stats.get("is_deleted", False)
         })
         
     return result
 
-@app.get("/api/agents/{agent_name}/sessions")
-async def list_agent_sessions(agent_name: str, days: int = 7):
+@app.get("/api/agents/{agent_id}/sessions")
+async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | None = None, end_date: str | None = None, start_ts: float | None = None, end_ts: float | None = None):
     """
-    Retrieves sessions for a specific agent filtered by days.
+    Retrieves sessions for a specific agent filtered by days or date range.
     """
     import time
+    from datetime import datetime, timezone
     cutoff_time = time.time() - (days * 24 * 3600)
+    
+    start_timestamp = start_ts
+    end_timestamp = end_ts
+    
+    if start_date and end_date and not start_timestamp:
+        try:
+            # assuming local time or utc. simple local conversion:
+            start_timestamp = datetime.strptime(start_date, "%Y-%m-%d").timestamp()
+            end_timestamp = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59).timestamp()
+        except Exception:
+            pass
     
     sessions = []
     
@@ -501,7 +644,11 @@ async def list_agent_sessions(agent_name: str, days: int = 7):
             
             # Date filter using file modification time
             file_mtime = os.path.getmtime(filepath)
-            if file_mtime < cutoff_time:
+            
+            if start_timestamp and end_timestamp:
+                if file_mtime < start_timestamp or file_mtime > end_timestamp:
+                    continue
+            elif file_mtime < cutoff_time:
                 continue
                 
             try:
@@ -511,10 +658,19 @@ async def list_agent_sessions(agent_name: str, days: int = 7):
                 stage5 = data.get("stage5_evaluation", {})
                 transcript_eval = stage5.get("transcript_evaluation", {})
                 file_agent_name = data.get("agent_name") or transcript_eval.get("agent_name", "Unknown Agent")
+                file_agent_id = data.get("agent_id") or file_agent_name
                 
-                if file_agent_name == agent_name:
-                    data["created_at"] = file_mtime
-                    sessions.append(data)
+                if file_agent_id == agent_id:
+                    sessions.append({
+                        "session_id": data.get("session_id", filename.replace(".json", "")),
+                        "topic": data.get("topic", ""),
+                        "status": data.get("status", "success"),
+                        "created_at": file_mtime,
+                        "stage5_evaluation": {
+                            "transcript_evaluation": transcript_eval,
+                            "speaker_emotions": stage5.get("speaker_emotions", {})
+                        }
+                    })
                     
             except Exception as e:
                 logger.error(f"Error loading session file {filename}: {str(e)}")

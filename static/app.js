@@ -1,28 +1,27 @@
 // Outlook Voice Analytics Frontend controller
 
 let currentAgentName = null;
+let currentAgentId = null;
 let currentSessionId = null;
 let activePollInterval = null;
-let selectedFile = null;
+let selectedFiles = [];
 
 // DOM Elements
 const btnNewAnalysis = document.getElementById("btnNewAnalysis");
-const newAnalysisModal = document.getElementById("newAnalysisModal");
+const unifiedUploadModal = document.getElementById("unifiedUploadModal");
 const modalClose = document.getElementById("modalClose");
 
-const btnBulkUpload = document.getElementById("btnBulkUpload");
-const bulkUploadModal = document.getElementById("bulkUploadModal");
-const bulkModalClose = document.getElementById("bulkModalClose");
-const bulkDropZone = document.getElementById("bulkDropZone");
-const bulkFileInput = document.getElementById("bulkFileInput");
-const bulkFileInfo = document.getElementById("bulkFileInfo");
-const bulkUploadForm = document.getElementById("bulkUploadForm");
+
+
+
+
+
+
+
 let selectedBulkFile = null;
 
-const btnViewGraphs = document.getElementById("btnViewGraphs");
-const graphsModal = document.getElementById("graphsModal");
-const graphsModalClose = document.getElementById("graphsModalClose");
 let currentSessionData = null;
+const addAgentModal = document.getElementById("addAgentModal");
 
 const navAnalytics = document.getElementById("navAnalytics");
 const navMail = document.getElementById("navMail");
@@ -31,14 +30,16 @@ const btnExportAgentPDF = document.getElementById("btnExportAgentPDF");
 const btnExportAgentCSV = document.getElementById("btnExportAgentCSV");
 const btnExportSessionPDF = document.getElementById("btnExportSessionPDF");
 const btnExportSessionCSV = document.getElementById("btnExportSessionCSV");
+const btnDraftEmail = document.getElementById("btnDraftEmail");
 let currentAgentSessionsData = [];
 
 const btnReevaluateSession = document.getElementById("btnReevaluateSession");
 
-const newAnalysisForm = document.getElementById("newAnalysisForm");
+const unifiedUploadForm = document.getElementById("unifiedUploadForm");
 const audioFileInput = document.getElementById("audioFileInput");
 const dropZone = document.getElementById("dropZone");
 const fileInfo = document.getElementById("fileInfo");
+const analysisAgentName = document.getElementById("analysisAgentName");
 const progressPanel = document.getElementById("progressPanel");
 const progressMessage = document.getElementById("progressMessage");
 const progressBarFill = document.getElementById("progressBarFill");
@@ -49,6 +50,11 @@ const agentList = document.getElementById("agentList");
 const agentDetailsPane = document.getElementById("agentDetailsPane");
 const selectedAgentName = document.getElementById("selectedAgentName");
 const agentDateFilter = document.getElementById("agentDateFilter");
+const sessionSortFilter = document.getElementById("sessionSortFilter");
+const customDateRangeContainer = document.getElementById("customDateRangeContainer");
+const customStartDate = document.getElementById("customStartDate");
+const customEndDate = document.getElementById("customEndDate");
+const btnApplyCustomDate = document.getElementById("btnApplyCustomDate");
 const agentSummaryCard = document.getElementById("agentSummaryCard");
 const agentSummaryCalls = document.getElementById("agentSummaryCalls");
 const agentSummaryScore = document.getElementById("agentSummaryScore");
@@ -163,49 +169,70 @@ function setupResizers() {
 }
 
 function setupEventListeners() {
-    btnNewAnalysis.addEventListener("click", () => newAnalysisModal.classList.add("open"));
-    
-    // Bulk Upload Events
-    if(btnBulkUpload) {
-        btnBulkUpload.addEventListener("click", () => {
-            bulkUploadForm.reset();
-            selectedBulkFile = null;
-            bulkFileInfo.textContent = "Supports .ZIP only";
-            bulkFileInfo.style.color = "var(--text-muted)";
-            bulkUploadModal.classList.add("open");
-        });
-    }
-    if(bulkModalClose) bulkModalClose.addEventListener("click", () => bulkUploadModal.classList.remove("open"));
-    if(bulkDropZone) {
-        bulkDropZone.addEventListener("click", () => bulkFileInput.click());
-        bulkDropZone.addEventListener("dragover", (e) => {
+    if(btnAddAgent) btnAddAgent.addEventListener("click", () => addAgentModal.classList.add("open"));
+    if(addAgentModalClose) addAgentModalClose.addEventListener("click", () => addAgentModal.classList.remove("open"));
+    if(addAgentForm) {
+        addAgentForm.addEventListener("submit", (e) => {
             e.preventDefault();
-            bulkDropZone.classList.add("dragover");
+            submitNewAgent();
         });
-        bulkDropZone.addEventListener("dragleave", (e) => {
+    }
+
+
+    if(bulkAgentsDropZone) {
+        bulkAgentsDropZone.addEventListener("click", () => bulkAgentsFileInput.click());
+        bulkAgentsDropZone.addEventListener("dragover", (e) => {
             e.preventDefault();
-            bulkDropZone.classList.remove("dragover");
+            bulkAgentsDropZone.classList.add("dragover");
         });
-        bulkDropZone.addEventListener("drop", (e) => {
+        bulkAgentsDropZone.addEventListener("dragleave", (e) => {
             e.preventDefault();
-            bulkDropZone.classList.remove("dragover");
-            if (e.dataTransfer.files.length > 0) handleBulkFileSelect(e.dataTransfer.files[0]);
+            bulkAgentsDropZone.classList.remove("dragover");
+        });
+        bulkAgentsDropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            bulkAgentsDropZone.classList.remove("dragover");
+            if (e.dataTransfer.files.length > 0) {
+                selectedBulkFile = e.dataTransfer.files[0];
+                bulkAgentsFileInfo.textContent = selectedBulkFile.name;
+                bulkAgentsFileInfo.style.color = "var(--outlook-blue)";
+            }
         });
     }
-    if(bulkFileInput) {
-        bulkFileInput.addEventListener("change", (e) => {
-            if (e.target.files.length > 0) handleBulkFileSelect(e.target.files[0]);
+    if(bulkAgentsFileInput) {
+        bulkAgentsFileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                selectedBulkFile = e.target.files[0];
+                bulkAgentsFileInfo.textContent = selectedBulkFile.name;
+                bulkAgentsFileInfo.style.color = "var(--outlook-blue)";
+            }
         });
     }
-    if(bulkUploadForm) {
-        bulkUploadForm.addEventListener("submit", (e) => { e.preventDefault(); startBulkAnalysis(); });
+    if(bulkAddAgentsForm) {
+        bulkAddAgentsForm.addEventListener("submit", (e) => { e.preventDefault(); startBulkAddAgents(); });
     }
+
+    if(btnUnifiedUpload) {
+        btnUnifiedUpload.addEventListener("click", () => {
+            unifiedUploadForm.reset();
+            selectedFiles = [];
+            document.getElementById('audioFileInput').accept = 'audio/*';
+            document.getElementById('audioFileInput').multiple = true;
+            document.getElementById('dropZoneLabel').innerHTML = 'Drag and drop your audio files here or <span>browse files</span>';
+            fileInfo.textContent = "Supports MP3, WAV, FLAC";
+            fileInfo.style.color = "var(--text-muted)";
+            analysisAgentName.value = currentAgentName || "";
+            analysisAgentName.dataset.id = currentAgentId || "";
+            unifiedUploadModal.classList.add("open");
+        });
+    }
+    if(modalClose) modalClose.addEventListener("click", () => unifiedUploadModal.classList.remove("open"));
     
     if(btnReevaluateSession) {
         btnReevaluateSession.addEventListener("click", reevaluateCurrentSession);
     }
     
-    const btnExportSessionPDF = document.getElementById("btnExportSessionPDF");
+    // removed redeclaration of btnExportSessionPDF
     if(btnExportSessionPDF) {
         btnExportSessionPDF.addEventListener("click", () => {
             if(!currentSessionId) return;
@@ -214,7 +241,13 @@ function setupEventListeners() {
             // Unhide transcript and remove scroll for PDF
             const transcriptContainer = document.getElementById("transcriptContentContainer");
             const originalDisplay = transcriptContainer ? transcriptContainer.style.display : "";
-            if (transcriptContainer) transcriptContainer.style.display = "block";
+            const originalMaxHeight = transcriptContainer ? transcriptContainer.style.maxHeight : "";
+            const originalOverflow = transcriptContainer ? transcriptContainer.style.overflowY : "";
+            if (transcriptContainer) {
+                transcriptContainer.style.display = "block";
+                transcriptContainer.style.maxHeight = "none";
+                transcriptContainer.style.overflowY = "visible";
+            }
             
             const origElementOverflow = element.style.overflowY;
             const origElementHeight = element.style.height;
@@ -230,14 +263,46 @@ function setupEventListeners() {
             };
             
             html2pdf().set(opt).from(element).save().then(() => {
-                if (transcriptContainer) transcriptContainer.style.display = originalDisplay;
+                if (transcriptContainer) {
+                    transcriptContainer.style.display = originalDisplay;
+                    transcriptContainer.style.maxHeight = originalMaxHeight;
+                    transcriptContainer.style.overflowY = originalOverflow;
+                }
                 element.style.overflowY = origElementOverflow;
                 element.style.height = origElementHeight;
             });
         });
     }
 
-    const btnExportSessionCSV = document.getElementById("btnExportSessionCSV");
+    // removed redeclaration of btnExportSessionCSV
+    if(btnDraftEmail) {
+        btnDraftEmail.addEventListener("click", () => {
+            if(!currentSessionData) return;
+            const ev = currentSessionData.stage5_evaluation?.transcript_evaluation || {};
+            
+            // currentAgentId is the agent's email address
+            const agentEmail = currentAgentId; 
+            const subject = encodeURIComponent(`Performance Review & Feedback - ${currentSessionData.topic || currentSessionData.session_id}`);
+            
+            const bodyText = `Hi ${currentAgentName},
+
+Here is the feedback and analysis for your recent call (${currentSessionData.topic || currentSessionData.session_id}):
+
+OVERALL SCORE: ${ev.overall_score_percentage || 0}%
+
+FEEDBACK:
+${ev.technical_reviewer_feedback || 'No actionable feedback provided for this session.'}
+
+Please review this feedback and let us know if you have any questions.
+
+Best regards,
+Management`;
+
+            const body = encodeURIComponent(bodyText);
+            window.location.href = `mailto:${agentEmail}?subject=${subject}&body=${body}`;
+        });
+    }
+
     if(btnExportSessionCSV) {
         btnExportSessionCSV.addEventListener("click", () => {
             if(!currentSessionData) return;
@@ -265,10 +330,11 @@ function setupEventListeners() {
                 });
             }
             
-            const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
-            const encodedUri = encodeURI(csvContent);
+            const csvContent = csvRows.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", `Session_${currentSessionId}.csv`);
             document.body.appendChild(link);
             link.click();
@@ -276,12 +342,15 @@ function setupEventListeners() {
         });
     }
 
-    const btnExportAgentPDF = document.getElementById("btnExportAgentPDF");
+    // removed redeclaration of btnExportAgentPDF
     if(btnExportAgentPDF) {
         btnExportAgentPDF.addEventListener("click", () => {
             if(!currentAgentName) return;
             const element = document.getElementById('agentDetailsPane');
             const listEl = document.getElementById('agentSessionsList');
+            const callAnalytics = document.getElementById('modalCallAnalyticsContainer');
+            const trendAnalytics = document.getElementById('modalTrendChartContainer');
+            const modalBody = callAnalytics ? callAnalytics.parentNode : null;
             
             // Temporarily remove overflow to capture full list
             const origElementHeight = element.style.height;
@@ -292,6 +361,26 @@ function setupEventListeners() {
             if (listEl) {
                 listEl.style.overflowY = "visible";
                 listEl.style.flex = "none";
+            }
+            
+            // Temporary PDF container inside agentDetailsPane
+            const pdfGraphsContainer = document.createElement('div');
+            pdfGraphsContainer.style.marginTop = "20px";
+            pdfGraphsContainer.style.marginBottom = "20px";
+            
+            const origCallDisplay = callAnalytics ? callAnalytics.style.display : "";
+            const origTrendDisplay = trendAnalytics ? trendAnalytics.style.display : "";
+            
+            if (callAnalytics && trendAnalytics && modalBody) {
+                callAnalytics.style.display = "flex";
+                trendAnalytics.style.display = "block";
+                pdfGraphsContainer.appendChild(callAnalytics);
+                pdfGraphsContainer.appendChild(trendAnalytics);
+                if (listEl && listEl.parentNode) {
+                    listEl.parentNode.insertBefore(pdfGraphsContainer, listEl);
+                } else {
+                    element.appendChild(pdfGraphsContainer);
+                }
             }
             
             const opt = {
@@ -308,11 +397,20 @@ function setupEventListeners() {
                     listEl.style.overflowY = origListOverflow;
                     listEl.style.flex = origListFlex;
                 }
+                if (callAnalytics && trendAnalytics && modalBody) {
+                    callAnalytics.style.display = origCallDisplay;
+                    trendAnalytics.style.display = origTrendDisplay;
+                    modalBody.appendChild(callAnalytics);
+                    modalBody.appendChild(trendAnalytics);
+                    if (pdfGraphsContainer.parentNode) {
+                        pdfGraphsContainer.parentNode.removeChild(pdfGraphsContainer);
+                    }
+                }
             });
         });
     }
 
-    const btnExportAgentCSV = document.getElementById("btnExportAgentCSV");
+    // removed redeclaration of btnExportAgentCSV
     if(btnExportAgentCSV) {
         btnExportAgentCSV.addEventListener("click", () => {
             if(!currentAgentName || !currentAgentSessionsData) return;
@@ -332,10 +430,11 @@ function setupEventListeners() {
                 ]);
             });
             
-            const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
-            const encodedUri = encodeURI(csvContent);
+            const csvContent = csvRows.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", `Agent_${currentAgentName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
             document.body.appendChild(link);
             link.click();
@@ -343,42 +442,117 @@ function setupEventListeners() {
         });
     }
     
-    const btnUploadForAgent = document.getElementById("btnUploadForAgent");
-    if(btnUploadForAgent) {
-        btnUploadForAgent.addEventListener("click", () => {
-            newAnalysisModal.classList.add("open");
-        });
-    }
+    
     
     const btnToggleTranscript = document.getElementById("btnToggleTranscript");
+    const btnCopyTranscript = document.getElementById("btnCopyTranscript");
+    
     if(btnToggleTranscript) {
         btnToggleTranscript.addEventListener("click", () => {
             const container = document.getElementById("transcriptContentContainer");
             if(container.style.display === "none") {
                 container.style.display = "block";
                 btnToggleTranscript.textContent = "Hide Transcript";
+                if (btnCopyTranscript) btnCopyTranscript.style.display = "block";
             } else {
                 container.style.display = "none";
                 btnToggleTranscript.textContent = "Show Transcript";
+                if (btnCopyTranscript) btnCopyTranscript.style.display = "none";
+            }
+        });
+    }
+
+    if(btnCopyTranscript) {
+        btnCopyTranscript.addEventListener("click", () => {
+            if(currentSessionData && currentSessionData.turns) {
+                const textToCopy = currentSessionData.turns.map(t => `${t.speaker}: ${t.text}`).join("\n");
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalHTML = btnCopyTranscript.innerHTML;
+                    btnCopyTranscript.innerHTML = '<i class="ms-Icon ms-Icon--CheckMark" style="color: #107c10;"></i>';
+                    setTimeout(() => {
+                        btnCopyTranscript.innerHTML = originalHTML;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy transcript: ', err);
+                });
             }
         });
     }
     
-    if(btnViewGraphs) {
-        btnViewGraphs.addEventListener("click", () => {
-            if(currentSessionData) renderCharts(currentSessionData);
-            graphsModal.classList.add("open");
+    const btnCopyAgentSummary = document.getElementById("btnCopyAgentSummary");
+    if(btnCopyAgentSummary) {
+        btnCopyAgentSummary.addEventListener("click", () => {
+            const toneTextEl = document.getElementById("agentSummaryToneText");
+            if(toneTextEl && toneTextEl.textContent) {
+                navigator.clipboard.writeText(toneTextEl.textContent.trim()).then(() => {
+                    const originalHTML = btnCopyAgentSummary.innerHTML;
+                    btnCopyAgentSummary.innerHTML = '<i class="ms-Icon ms-Icon--CheckMark"></i> Copied!';
+                    setTimeout(() => {
+                        btnCopyAgentSummary.innerHTML = originalHTML;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy agent summary: ', err);
+                });
+            }
         });
     }
-    if(graphsModalClose) {
-        graphsModalClose.addEventListener("click", () => {
-            graphsModal.classList.remove("open");
+    
+    // Analytics Modal Logic
+    const analyticsModal = document.getElementById("analyticsModal");
+    const analyticsModalClose = document.getElementById("analyticsModalClose");
+    const btnTabCall = document.getElementById("btnTabCall");
+    const btnTabTrend = document.getElementById("btnTabTrend");
+    
+    const modalTabCall = document.getElementById("modalTabCall");
+    const modalTabTrend = document.getElementById("modalTabTrend");
+    const modalCallAnalyticsContainer = document.getElementById("modalCallAnalyticsContainer");
+    const modalTrendChartContainer = document.getElementById("modalTrendChartContainer");
+    
+    function setModalTabActive(tabName) {
+        if (tabName === 'call') {
+            modalTabCall.classList.add("active-tab");
+            modalTabTrend.classList.remove("active-tab");
+            modalCallAnalyticsContainer.style.display = "flex";
+            modalTrendChartContainer.style.display = "none";
+            modalTabCall.style.backgroundColor = "var(--outlook-blue)";
+            modalTabCall.style.color = "white";
+            modalTabTrend.style.backgroundColor = "white";
+            modalTabTrend.style.color = "var(--text-primary)";
+        } else {
+            modalTabTrend.classList.add("active-tab");
+            modalTabCall.classList.remove("active-tab");
+            modalCallAnalyticsContainer.style.display = "none";
+            modalTrendChartContainer.style.display = "block";
+            modalTabTrend.style.backgroundColor = "var(--outlook-blue)";
+            modalTabTrend.style.color = "white";
+            modalTabCall.style.backgroundColor = "white";
+            modalTabCall.style.color = "var(--text-primary)";
+        }
+    }
+    
+    if (analyticsModalClose) {
+        analyticsModalClose.addEventListener("click", () => analyticsModal.classList.remove("open"));
+    }
+    
+    if (btnTabCall && btnTabTrend) {
+        btnTabCall.addEventListener("click", () => {
+            if (currentAgentSessionsData) renderCharts(currentAgentSessionsData);
+            setModalTabActive('call');
+            analyticsModal.classList.add("open");
+        });
+        
+        btnTabTrend.addEventListener("click", () => {
+            setModalTabActive('trend');
+            analyticsModal.classList.add("open");
         });
     }
-    modalClose.addEventListener("click", () => {
-        newAnalysisModal.classList.remove("open");
-        resetForm();
-    });
+    
+    if (modalTabCall && modalTabTrend) {
+        modalTabCall.addEventListener("click", () => setModalTabActive('call'));
+        modalTabTrend.addEventListener("click", () => setModalTabActive('trend'));
+    }
+    
+    // Removed btnViewGraphs and graphsModal logic
 
     dropZone.addEventListener("click", () => audioFileInput.click());
     dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
@@ -386,20 +560,60 @@ function setupEventListeners() {
     dropZone.addEventListener("drop", (e) => {
         e.preventDefault();
         dropZone.classList.remove("dragover");
-        if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files);
     });
     audioFileInput.addEventListener("change", (e) => {
-        if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+        if (e.target.files.length > 0) handleFileSelect(e.target.files);
     });
-    newAnalysisForm.addEventListener("submit", (e) => { e.preventDefault(); startAnalysis(); });
+    unifiedUploadForm.addEventListener("submit", (e) => { e.preventDefault(); startAnalysis(); });
 
     searchAgents.addEventListener("input", (e) => filterAgents(e.target.value));
 
+    let isEndDateManuallyChanged = false;
+
+    customEndDate.addEventListener("change", () => {
+        isEndDateManuallyChanged = true;
+    });
+
+    customStartDate.addEventListener("change", () => {
+        if (!isEndDateManuallyChanged || !customEndDate.value) {
+            customEndDate.value = customStartDate.value;
+        }
+    });
+
     agentDateFilter.addEventListener("change", () => {
-        if (currentAgentName) selectAgent(currentAgentName);
+        if (agentDateFilter.value === "custom") {
+            customDateRangeContainer.style.display = "flex";
+        } else {
+            customDateRangeContainer.style.display = "none";
+            loadAgents();
+        }
     });
     
-    document.getElementById("btnDeleteSession").addEventListener("click", deleteCurrentSession);
+    if (sessionSortFilter) {
+        sessionSortFilter.addEventListener("change", () => {
+            if (currentAgentId) selectAgent(currentAgentId, currentAgentName);
+        });
+    }
+
+    btnApplyCustomDate.addEventListener("click", () => {
+        loadAgents();
+    });
+
+    if(themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const isDark = document.body.classList.toggle("dark-theme");
+            document.body.classList.toggle("light-theme", !isDark);
+            themeToggle.innerHTML = isDark ? 
+                '<i class="ms-Icon ms-Icon--Sunny" aria-hidden="true"></i>' : 
+                '<i class="ms-Icon ms-Icon--ClearNight" aria-hidden="true"></i>';
+        });
+    }
+    
+    const btnDeleteSession = document.getElementById("btnDeleteSession");
+    if (btnDeleteSession) {
+        btnDeleteSession.addEventListener("click", deleteCurrentSession);
+    }
     
     // Responsive Back Navigation
     if(btnBackToAgents) {
@@ -420,15 +634,25 @@ function setupEventListeners() {
     }
 }
 
-function handleFileSelect(file) {
-    selectedFile = file;
-    fileInfo.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+function handleFileSelect(files) {
+    const isZip = document.querySelector('input[name="uploadType"]:checked').value === "zip";
+    if (isZip) {
+        selectedFiles = [files[0]];
+        fileInfo.textContent = `${files[0].name} (${(files[0].size / (1024 * 1024)).toFixed(2)} MB)`;
+    } else {
+        selectedFiles = Array.from(files);
+        if (selectedFiles.length === 1) {
+            fileInfo.textContent = `${selectedFiles[0].name} (${(selectedFiles[0].size / (1024 * 1024)).toFixed(2)} MB)`;
+        } else {
+            fileInfo.textContent = `${selectedFiles.length} files selected`;
+        }
+    }
     fileInfo.style.color = "var(--outlook-blue)";
 }
 
 function resetForm() {
     newAnalysisForm.reset();
-    selectedFile = null;
+    selectedFiles = [];
     fileInfo.textContent = "Supports MP3, WAV, M4A, FLAC";
     fileInfo.style.color = "var(--text-muted)";
 }
@@ -440,48 +664,20 @@ function handleBulkFileSelect(file) {
     bulkFileInfo.style.color = "var(--outlook-blue)";
 }
 
-async function startBulkAnalysis() {
-    if (!selectedBulkFile) return alert("Please select a ZIP file.");
-    
-    const formData = new FormData();
-    formData.append("file", selectedBulkFile);
-    
-    bulkUploadModal.classList.remove("open");
-    
-    // Use the progress panel for uploading state
-    progressPanel.classList.add("open");
-    progressMessage.textContent = "Uploading batch ZIP file...";
-    progressBarFill.style.width = "50%";
-    
-    try {
-        const response = await fetch("/api/upload/bulk", {
-            method: "POST",
-            body: formData
-        });
-        
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || "Upload failed");
-        }
-        
-        progressPanel.classList.remove("open");
-        alert("Batch uploaded successfully! Pending sessions have been created.");
-        loadAgents();
-    } catch (e) {
-        progressPanel.classList.remove("open");
-        alert(e.message);
-    }
-}
-
 async function reevaluateCurrentSession() {
-    if(!currentSessionId) return;
-    
+    if (!currentSessionId) return alert("No session selected.");
     // We need a topic. If current session doesn't have it locally, we just pass the existing one.
     // In our UI, sessionTopic.textContent has it.
     const topic = document.getElementById("sessionTopic").textContent;
     
     const formData = new FormData();
     formData.append("topic", topic);
+    if (analysisAgentName && analysisAgentName.value) {
+        formData.append("agent_name", analysisAgentName.value);
+    }
+    if (analysisAgentName && analysisAgentName.dataset.id) {
+        formData.append("agent_id", analysisAgentName.dataset.id);
+    }
     
     progressPanel.classList.add("open");
     progressMessage.textContent = "Queueing LLM Re-evaluation...";
@@ -538,53 +734,58 @@ async function loadAgents() {
             return;
         }
         
-        agentList.innerHTML = agents.map(agent => `
-            <div class="session-item" data-name="${agent.agent_name}" onclick="selectAgent('${agent.agent_name}')">
-                <div class="session-item-top">
-                    <span class="session-title">${agent.agent_name}</span>
-                    <span class="score-badge ${agent.avg_score >= 80 ? 'high' : (agent.avg_score >= 60 ? 'mid' : 'low')}">${agent.avg_score}%</span>
-                </div>
-                <div class="session-desc" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px;">
-                    ${Object.entries(agent.emotion_counts || {}).map(([emo, count]) => {
-                        const pct = agent.analyzed_calls > 0 ? Math.round((count / agent.analyzed_calls) * 100) : 0;
-                        return `<span style="font-size: 10px; background: var(--bg-hover); padding: 2px 5px; border-radius: 4px;">${emo.charAt(0).toUpperCase() + emo.slice(1)}: ${count} (${pct}%)</span>`;
-                    }).join("") || `<span style="font-size: 10px; color: var(--text-secondary);">No emotions</span>`}
-                </div>
-                <div class="session-meta">
-                    <span>${agent.total_calls} calls</span>
+        const activeWithCalls = agents.filter(a => !a.is_deleted && a.total_calls > 0).sort((a, b) => (a.avg_score || 0) - (b.avg_score || 0));
+        const activeWithoutCalls = agents.filter(a => !a.is_deleted && a.total_calls === 0);
+        const deletedAgents = agents.filter(a => a.is_deleted);
+        
+        window.globalAgentsList = agents;
+        
+        const renderAgentItem = (agent) => {
+            const scoreDisplay = agent.total_calls === 0 ? "N/A" : `${agent.avg_score}%`;
+            const scoreClass = agent.total_calls === 0 ? 'mid' : (agent.avg_score >= 80 ? 'high' : (agent.avg_score >= 60 ? 'mid' : 'low'));
+            
+            return `
+            <div class="session-item ${agent.is_deleted ? 'agent-deleted' : ''}" data-id="${agent.agent_id}" onclick="selectAgent('${agent.agent_id}', '${agent.agent_name.replace(/'/g, "\\'")}')" ${agent.is_deleted ? 'style="color: var(--accent-red); opacity: 0.6;"' : ''}>
+                <div class="session-item-top" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
+                        <span class="session-title" style="word-break: break-word; ${agent.is_deleted ? 'color: var(--accent-red);' : ''}">${agent.agent_name} ${agent.agent_id !== agent.agent_name ? `<span style="font-size: 14px; opacity: 0.7;">(${agent.agent_id})</span>` : ''}</span>
+                        <div class="session-meta">
+                            <span>${agent.total_calls} calls</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <span class="score-badge ${scoreClass}">${scoreDisplay}</span>
+                        <button class="icon-btn delete-agent-btn" onclick="deleteAgent(event, '${agent.agent_id}')" title="Delete Agent" style="background: none; border: none; color: ${agent.is_deleted ? 'transparent' : 'var(--text-secondary)'}; cursor: ${agent.is_deleted ? 'default' : 'pointer'};">
+                            <i class="ms-Icon ms-Icon--Delete" style="font-size: 17px;"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-        `).join("");
+            `;
+        };
+
+        let html = activeWithCalls.map(renderAgentItem).join("");
+        html += activeWithoutCalls.map(renderAgentItem).join("");
         
-        if (agents.length > 0) {
-            const chartCanvas = document.getElementById("allAgentsPerformanceChart");
-            if(chartCanvas) {
-                if(window.agentsPerfChart) window.agentsPerfChart.destroy();
-                const labels = agents.map(a => a.agent_name.length > 10 ? a.agent_name.substring(0, 10) + '...' : a.agent_name);
-                const scores = agents.map(a => a.avg_score);
-                window.agentsPerfChart = new Chart(chartCanvas, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Avg Score',
-                            data: scores,
-                            backgroundColor: 'rgba(0, 120, 212, 0.6)',
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { display: false, min: 0, max: 100 },
-                            x: { ticks: { font: { size: 10 }, color: '#616161' }, grid: { display: false } }
-                        }
-                    }
-                });
-            }
-            selectAgent(agents[0].agent_name);
+        if (deletedAgents.length > 0) {
+            html += `
+                <div id="deletedAgentsSection" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 5px;">
+                    <button id="btnToggleDeleted" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px; background: none; border: none; cursor: pointer; color: var(--text-secondary); font-weight: 600;" onclick="const c = document.getElementById('deletedAgentsContainer'); const i = this.querySelector('i'); if(c.style.display==='none'){c.style.display='block'; i.className='ms-Icon ms-Icon--ChevronUp';}else{c.style.display='none'; i.className='ms-Icon ms-Icon--ChevronDown';}">
+                        <span>Deleted Agents (${deletedAgents.length})</span>
+                        <i class="ms-Icon ms-Icon--ChevronDown" style="font-size: 15px;"></i>
+                    </button>
+                    <div id="deletedAgentsContainer" style="display: none;">
+                        ${deletedAgents.map(renderAgentItem).join("")}
+                    </div>
+                </div>
+            `;
+        }
+        
+        agentList.innerHTML = html;
+        
+        let firstRenderedAgent = activeWithCalls.length > 0 ? activeWithCalls[0] : (activeWithoutCalls.length > 0 ? activeWithoutCalls[0] : (deletedAgents.length > 0 ? deletedAgents[0] : null));
+        if (firstRenderedAgent) {
+            selectAgent(firstRenderedAgent.agent_id, firstRenderedAgent.agent_name);
         }
     } catch (e) {
         agentList.innerHTML = '<p class="error-msg">Failed to load agents.</p>';
@@ -602,7 +803,8 @@ function filterAgents(q) {
     });
 }
 
-async function selectAgent(agentName) {
+async function selectAgent(agentId, agentName) {
+    currentAgentId = agentId;
     currentAgentName = agentName;
     selectedAgentName.textContent = agentName;
     
@@ -610,15 +812,68 @@ async function selectAgent(agentName) {
     outlookApp.classList.remove("state-agent-list", "state-recording-analysis");
     outlookApp.classList.add("state-agent-details");
     
+    // Disable uploads if deleted
+    const btnUploadSingle = document.getElementById("btnUploadAudio");
+    const btnUploadBatch = document.getElementById("btnBatchUpload");
+    const btnUnifiedUploadMid = document.getElementById("btnUnifiedUpload");
+    const btnExportPDF = document.getElementById("btnExportAgentPDF");
+    const btnExportCSV = document.getElementById("btnExportAgentCSV");
+    const agentData = window.globalAgentsList?.find(a => a.agent_id === agentId);
+    if (agentData && agentData.is_deleted) {
+        if(btnUploadSingle) { btnUploadSingle.disabled = true; btnUploadSingle.style.opacity = "0.5"; btnUploadSingle.title = "Agent is deleted"; }
+        if(btnUploadBatch) { btnUploadBatch.disabled = true; btnUploadBatch.style.opacity = "0.5"; btnUploadBatch.title = "Agent is deleted"; }
+        if(btnUnifiedUploadMid) { btnUnifiedUploadMid.disabled = true; btnUnifiedUploadMid.style.opacity = "0.5"; btnUnifiedUploadMid.title = "Agent is deleted"; }
+        if(btnExportPDF) { btnExportPDF.disabled = true; btnExportPDF.style.opacity = "0.5"; btnExportPDF.title = "Agent is deleted"; }
+        if(btnExportCSV) { btnExportCSV.disabled = true; btnExportCSV.style.opacity = "0.5"; btnExportCSV.title = "Agent is deleted"; }
+    } else {
+        if(btnUploadSingle) { btnUploadSingle.disabled = false; btnUploadSingle.style.opacity = "1"; btnUploadSingle.title = ""; }
+        if(btnUploadBatch) { btnUploadBatch.disabled = false; btnUploadBatch.style.opacity = "1"; btnUploadBatch.title = ""; }
+        if(btnUnifiedUploadMid) { btnUnifiedUploadMid.disabled = false; btnUnifiedUploadMid.style.opacity = "1"; btnUnifiedUploadMid.title = "Upload Audio (Single or ZIP) for this Agent"; }
+        if(btnExportPDF) { btnExportPDF.disabled = false; btnExportPDF.style.opacity = "1"; btnExportPDF.title = "Export Agent Report (PDF)"; }
+        if(btnExportCSV) { btnExportCSV.disabled = false; btnExportCSV.style.opacity = "1"; btnExportCSV.title = "Export Agent Report (CSV)"; }
+    }
+    
     agentList.querySelectorAll(".session-item").forEach(el => {
-        el.classList.toggle("selected", el.dataset.name === agentName);
+        el.classList.toggle("selected", el.dataset.id === agentId);
     });
+    
+    // Clear the right panel while loading or if no sessions
+    readingPaneContent.classList.add("hidden");
+    emptyState.classList.remove("hidden");
 
-    const days = agentDateFilter.value;
+
+    const filterValue = agentDateFilter.value;
+    let url = `/api/agents/${encodeURIComponent(agentId)}/sessions`;
+    if (filterValue === "custom") {
+        const sd = customStartDate.value;
+        const ed = customEndDate.value;
+        
+        // Convert to Unix timestamps based on the user's local timezone
+        const startTs = Math.floor(new Date(sd + "T00:00:00").getTime() / 1000);
+        const endTs = Math.floor(new Date(ed + "T23:59:59").getTime() / 1000);
+        
+        url += `?start_ts=${startTs}&end_ts=${endTs}`;
+    } else {
+        url += `?days=${filterValue}`;
+    }
+    
     try {
-        const res = await fetch(`/api/agents/${encodeURIComponent(agentName)}/sessions?days=${days}`);
+        const res = await fetch(url);
         const sessions = await res.json();
         
+        const sortMode = sessionSortFilter ? sessionSortFilter.value : "newest";
+        sessions.sort((a, b) => {
+            if (sortMode === "newest") return b.created_at - a.created_at;
+            if (sortMode === "oldest") return a.created_at - b.created_at;
+            
+            const scoreA = (a.stage5_evaluation?.transcript_evaluation?.overall_score_percentage) || 0;
+            const scoreB = (b.stage5_evaluation?.transcript_evaluation?.overall_score_percentage) || 0;
+            
+            if (sortMode === "highest_score") return scoreB - scoreA;
+            if (sortMode === "lowest_score") return scoreA - scoreB;
+            return 0;
+        });
+
         if (sessions.length === 0) {
             agentSummaryCard.style.display = "none";
             agentSessionsList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No sessions found in this timeframe.</div>`;
@@ -665,22 +920,12 @@ async function selectAgent(agentName) {
         agentSummaryCalls.textContent = sessions.length;
         agentSummaryScore.textContent = avgScore.toFixed(1) + "%";
         
-        let toneText = "No emotional data available from smallest.ai for this timeframe.";
-        
-        if (analyzedCount > 0 && Object.keys(emotions).length > 0) {
-            let sortedEmotions = Object.entries(emotions).sort((a, b) => b[1] - a[1]);
-            let emotionParts = sortedEmotions.filter(e => e[1] > 0).map(e => `${e[1]}% ${e[0]}`);
-            if(emotionParts.length > 0) {
-                let listStr = emotionParts.length > 1 ? emotionParts.slice(0, -1).join(", ") + ", and " + emotionParts[emotionParts.length - 1] : emotionParts[0];
-                toneText = `According to smallest.ai aggregated analysis across these calls, ${agentName}'s tone averaged ${listStr}.`;
-            }
-        }
-        
-        const toneTextEl = document.getElementById("agentSummaryToneText");
-        if (toneTextEl) toneTextEl.textContent = `"${toneText}"`;
-        
         agentSummaryCard.style.display = "block";
         currentAgentSessionsData = sessions;
+        
+        // Render trend chart if > 1 call
+        renderTrendChart(sessions);
+        
         if (btnExportAgentPDF) btnExportAgentPDF.style.display = "block";
         if (btnExportAgentCSV) btnExportAgentCSV.style.display = "block";
 
@@ -691,7 +936,7 @@ async function selectAgent(agentName) {
             let tier = score >= 80 ? "high" : (score >= 60 ? "mid" : "low");
             
             let badgeHtml = isPending 
-                ? `<button class="fluent-btn-primary" style="padding: 2px 8px; font-size: 11px; min-width: auto; height: 22px;" onclick="runPendingAnalysis(event, '${session.session_id}')">Analyze</button>`
+                ? `<button class="fluent-btn-primary" style="padding: 2px 8px; font-size: 14px; min-width: auto; height: 22px;" onclick="runPendingAnalysis(event, '${session.session_id}')">Analyze</button>`
                 : `<span class="score-badge ${tier}">${score.toFixed(1)}%</span>`;
                 
             return `
@@ -758,12 +1003,37 @@ function renderSessionReport(session) {
     const ev = session.stage5_evaluation?.transcript_evaluation;
     if (ev) {
         let score = ev.overall_score_percentage || 0;
+        
+        // Emotional Summary calculation for 6th box
+        const agentSpk = ev.agent_speaker_label || "";
+        const sessionEmotionsRaw = session.stage5_evaluation?.speaker_emotions || {};
+        let sessionEmotionCounts = {};
+        if (agentSpk && sessionEmotionsRaw[agentSpk] && sessionEmotionsRaw[agentSpk].all_emotions && Object.keys(sessionEmotionsRaw[agentSpk].all_emotions).length > 0) {
+            sessionEmotionCounts = sessionEmotionsRaw[agentSpk].all_emotions;
+        } else {
+            Object.values(sessionEmotionsRaw).forEach(e => {
+                let em = (e.emotion || 'neutral').toLowerCase();
+                em = em.charAt(0).toUpperCase() + em.slice(1);
+                sessionEmotionCounts[em] = 100;
+            });
+        }
+        
+        let emotionParamsHtml = '';
+        let sortedSessionEmotions = Object.entries(sessionEmotionCounts).sort((a,b) => b[1] - a[1]).slice(0, 4);
+        if (sortedSessionEmotions.length === 0) {
+            emotionParamsHtml = `<p style="font-size: 16px; color: var(--text-muted); font-style: italic;">No emotion data available.</p>`;
+        } else {
+            sortedSessionEmotions.forEach(([emo, pct]) => {
+                let capEmo = emo.charAt(0).toUpperCase() + emo.slice(1);
+                emotionParamsHtml += renderMetric(capEmo, pct, 100);
+            });
+        }
         document.getElementById("qaOverallScore").textContent = score + "%";
         
         sessionSenderName.textContent = ev.agent_name || "Agent";
         senderAvatar.textContent = (ev.agent_name || "A").substring(0,2).toUpperCase();
 
-        const renderMetric = (label, value, max) => {
+        function renderMetric(label, value, max) {
             let valNum = (value !== undefined && value !== 'N/A' && value !== null && value !== -1) ? parseInt(value) : -1;
             let displayVal = valNum >= 0 ? `${valNum}/${max}` : 'N/A';
             let pct = valNum >= 0 ? (valNum / max) * 100 : 0;
@@ -772,7 +1042,7 @@ function renderSessionReport(session) {
             
             return `
                 <div style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 6px;">
                         <span style="color: var(--text-primary); font-weight: 500;">${label}</span>
                         <span style="font-weight: 700; color: ${color};">${displayVal}</span>
                     </div>
@@ -791,9 +1061,9 @@ function renderSessionReport(session) {
                     <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #0078d4, #50e4ff);"></div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
                         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 120, 212, 0.1); display: flex; align-items: center; justify-content: center; color: #0078d4;">
-                            <i class="ms-Icon ms-Icon--Message" aria-hidden="true" style="font-size: 18px;"></i>
+                            <i class="ms-Icon ms-Icon--Message" aria-hidden="true" style="font-size: 20px;"></i>
                         </div>
-                        <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Communication & Professionalism</h4>
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">Communication & Professionalism</h4>
                     </div>
                     ${renderMetric('Greeting & Verification', ev.communication_professionalism?.greeting_verification, 5)}
                     ${renderMetric('Active Listening & Empathy', ev.communication_professionalism?.active_listening_empathy, 5)}
@@ -803,12 +1073,12 @@ function renderSessionReport(session) {
 
                 <!-- Technical Accuracy & Resolution -->
                 <div class="scorecard-section" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #107c41, #84c99c);"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #0078d4, #50e4ff);"></div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16, 124, 65, 0.1); display: flex; align-items: center; justify-content: center; color: #107c41;">
-                            <i class="ms-Icon ms-Icon--Repair" aria-hidden="true" style="font-size: 18px;"></i>
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 120, 212, 0.1); display: flex; align-items: center; justify-content: center; color: #0078d4;">
+                            <i class="ms-Icon ms-Icon--Repair" aria-hidden="true" style="font-size: 20px;"></i>
                         </div>
-                        <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Technical Accuracy</h4>
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">Technical Accuracy</h4>
                     </div>
                     ${renderMetric('Accurate Troubleshooting', ev.technical_accuracy?.accurate_troubleshooting, 10)}
                     ${renderMetric('Solution Accuracy', ev.technical_accuracy?.solution_accuracy, 10)}
@@ -818,12 +1088,12 @@ function renderSessionReport(session) {
                 
                 <!-- Process Adherence -->
                 <div class="scorecard-section" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #6264a7, #a6a9e1);"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #0078d4, #50e4ff);"></div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(98, 100, 167, 0.1); display: flex; align-items: center; justify-content: center; color: #6264a7;">
-                            <i class="ms-Icon ms-Icon--ComplianceAsset" aria-hidden="true" style="font-size: 18px;"></i>
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 120, 212, 0.1); display: flex; align-items: center; justify-content: center; color: #0078d4;">
+                            <i class="ms-Icon ms-Icon--ComplianceAsset" aria-hidden="true" style="font-size: 20px;"></i>
                         </div>
-                        <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Process Adherence</h4>
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">Process Adherence</h4>
                     </div>
                     ${renderMetric('Critical/P1 Compliance', ev.process_adherence?.critical_compliance, 5)}
                     ${renderMetric('Ticket Documentation', ev.process_adherence?.ticket_documentation, 10)}
@@ -832,12 +1102,12 @@ function renderSessionReport(session) {
                 
                 <!-- Customer Experience -->
                 <div class="scorecard-section" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #ffb900, #ffe285);"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #0078d4, #50e4ff);"></div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255, 185, 0, 0.1); display: flex; align-items: center; justify-content: center; color: #ffb900;">
-                            <i class="ms-Icon ms-Icon--Heart" aria-hidden="true" style="font-size: 18px;"></i>
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 120, 212, 0.1); display: flex; align-items: center; justify-content: center; color: #0078d4;">
+                            <i class="ms-Icon ms-Icon--Heart" aria-hidden="true" style="font-size: 20px;"></i>
                         </div>
-                        <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Customer Experience</h4>
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">Customer Experience</h4>
                     </div>
                     ${renderMetric('Ownership of Incident', ev.customer_experience?.incident_ownership, 5)}
                     ${renderMetric('Stakeholder Communication', ev.customer_experience?.stakeholder_communication, 10)}
@@ -846,28 +1116,43 @@ function renderSessionReport(session) {
                 
                 <!-- Efficiency Metrics -->
                 <div class="scorecard-section" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #d13438, #ff8c8f);"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #0078d4, #50e4ff);"></div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(209, 52, 56, 0.1); display: flex; align-items: center; justify-content: center; color: #d13438;">
-                            <i class="ms-Icon ms-Icon--SpeedHigh" aria-hidden="true" style="font-size: 18px;"></i>
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 120, 212, 0.1); display: flex; align-items: center; justify-content: center; color: #0078d4;">
+                            <i class="ms-Icon ms-Icon--SpeedHigh" aria-hidden="true" style="font-size: 20px;"></i>
                         </div>
-                        <h4 style="margin: 0; font-size: 16px; font-weight: 600;">Efficiency</h4>
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">Efficiency</h4>
                     </div>
                     ${renderMetric('First Call Resolution', ev.efficiency_metrics?.first_call_resolution, 5)}
                     ${renderMetric('30 Minute Rule', ev.efficiency_metrics?.thirty_minute_rule, 3)}
                     ${renderMetric('Minimal Transfers/Holds', ev.efficiency_metrics?.minimal_transfers_holds, 2)}
                 </div>
                 
+                <!-- Emotional Summary (6th Box) -->
+                <div class="scorecard-section" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(to bottom, #0078d4, #50e4ff);"></div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 120, 212, 0.1); display: flex; align-items: center; justify-content: center; color: #0078d4;">
+                            <i class="ms-Icon ms-Icon--Emoji2" aria-hidden="true" style="font-size: 20px;"></i>
+                        </div>
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">Emotional Summary</h4>
+                    </div>
+                    ${emotionParamsHtml}
+                </div>
+
                 <!-- Reviewer Feedback -->
                 <div class="scorecard-section" style="grid-column: 1 / -1; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 26px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 18px; margin-top: 10px; position: relative;">
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(to right, #0078d4, #107c41, #ffb900);"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(to right, #0078d4, #50e4ff);"></div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 40px; height: 40px; border-radius: 20px; background: linear-gradient(135deg, #0078d4, #84c99c); display: flex; align-items: center; justify-content: center; color: white;">
-                            <i class="ms-Icon ms-Icon--Feedback" aria-hidden="true" style="font-size: 18px;"></i>
+                        <div style="width: 40px; height: 40px; border-radius: 20px; background: linear-gradient(135deg, #0078d4, #50e4ff); display: flex; align-items: center; justify-content: center; color: white;">
+                            <i class="ms-Icon ms-Icon--Feedback" aria-hidden="true" style="font-size: 20px;"></i>
                         </div>
-                        <h4 style="margin: 0; font-size: 18px; font-weight: 600;">AI Reviewer Feedback</h4>
+                        <h4 style="margin: 0; font-size: 20px; font-weight: 600; flex: 1;">Feedback</h4>
+                        <button class="toolbar-btn" id="btnCopyFeedback" title="Copy Feedback">
+                            <i class="ms-Icon ms-Icon--Copy" aria-hidden="true"></i>
+                        </button>
                     </div>
-                    <div style="font-size: 14px; line-height: 1.7; color: var(--text-primary); background: rgba(128,128,128,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid #0078d4; font-style: italic;">
+                    <div style="font-size: 17px; line-height: 1.7; color: var(--text-primary); background: rgba(128,128,128,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid #0078d4; font-style: italic;">
                         "${ev.technical_reviewer_feedback || 'No actionable feedback provided for this session.'}"
                     </div>
                 </div>
@@ -875,6 +1160,20 @@ function renderSessionReport(session) {
             </div>
         `;
         document.getElementById("qaCategoriesContainer").innerHTML = catHTML;
+
+        const btnCopyFeedback = document.getElementById("btnCopyFeedback");
+        if (btnCopyFeedback) {
+            btnCopyFeedback.addEventListener("click", () => {
+                const textToCopy = ev.technical_reviewer_feedback || 'No actionable feedback provided for this session.';
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalHTML = btnCopyFeedback.innerHTML;
+                    btnCopyFeedback.innerHTML = '<i class="ms-Icon ms-Icon--CheckMark" style="color: #107c10;"></i>';
+                    setTimeout(() => {
+                        btnCopyFeedback.innerHTML = originalHTML;
+                    }, 2000);
+                }).catch(err => console.error('Failed to copy feedback: ', err));
+            });
+        }
     }
 
     if (speakerCardsGrid) speakerCardsGrid.innerHTML = "";
@@ -891,123 +1190,274 @@ function renderSessionReport(session) {
         
         // Reset toggle button
         const btnToggleTranscript = document.getElementById("btnToggleTranscript");
+        const btnCopyTranscript = document.getElementById("btnCopyTranscript");
         if(btnToggleTranscript) {
             btnToggleTranscript.textContent = "Show Transcript";
             transcriptContainer.style.display = "none";
         }
+        if(btnCopyTranscript) {
+            btnCopyTranscript.style.display = "none";
+        }
     } else if(transcriptContainer) {
         transcriptContainer.innerHTML = '<div style="color: var(--text-secondary); text-align: center;">No transcript available for this session.</div>';
     }
+
+    if (currentAgentSessionsData) renderCharts(currentAgentSessionsData);
 }
 
 // Chart.js render logic
 let qaRadarChartInstance = null;
 let emotionPolarChartInstance = null;
+let trendLineChartInstance = null;
 
-function renderCharts(session) {
-    const ev = session.stage5_evaluation?.transcript_evaluation;
-    if(!ev) return;
+function renderTrendChart(sessions) {
+    const container = document.getElementById('trendChartContainer');
+    if (!container) return;
     
-    // Aggregate category scores
-    const commScore = (ev.communication_professionalism?.greeting_verification || 0) + 
-                      (ev.communication_professionalism?.active_listening_empathy || 0) + 
-                      (ev.communication_professionalism?.probing_issue || 0) + 
-                      (ev.communication_professionalism?.validating_priority || 0);
-                      
-    const techScore = (ev.technical_accuracy?.accurate_troubleshooting || 0) + 
-                      (ev.technical_accuracy?.solution_accuracy || 0) + 
-                      (ev.technical_accuracy?.valid_escalation || 0); // Exclude KB which is N/A
-                      
-    const procScore = (ev.process_adherence?.critical_compliance || 0) + 
-                      (ev.process_adherence?.ticket_documentation || 0) + 
-                      (ev.process_adherence?.time_entry_agreement || 0);
-                      
-    const custScore = (ev.customer_experience?.incident_ownership || 0) + 
-                      (ev.customer_experience?.stakeholder_communication || 0) + 
-                      (ev.customer_experience?.proper_closing_satisfaction || 0);
-                      
-    const effScore  = (ev.efficiency_metrics?.first_call_resolution || 0) + 
-                      (ev.efficiency_metrics?.thirty_minute_rule || 0) + 
-                      (ev.efficiency_metrics?.minimal_transfers_holds || 0);
+    // Filter out pending sessions and sort by date ascending (assuming older sessions are at the end, let's reverse them or sort by ID/date)
+    const completedSessions = sessions.filter(s => s.status !== "pending").reverse();
+    const btnTabTrend = document.getElementById("btnTabTrend");
+    const emptyState = document.getElementById("trendChartEmptyState");
+    const canvas = document.getElementById("trendLineChart");
+    
+    if (btnTabTrend) {
+        btnTabTrend.style.display = "flex";
+        let days = 7;
+        const filterVal = document.getElementById("agentDateFilter")?.value;
+        if (filterVal === "custom") {
+            const sd = document.getElementById("customStartDate")?.value;
+            const ed = document.getElementById("customEndDate")?.value;
+            if (sd && ed) {
+                days = (new Date(ed) - new Date(sd)) / (1000 * 60 * 60 * 24) + 1;
+            } else {
+                days = 0;
+            }
+        } else {
+            days = parseInt(filterVal || "7");
+        }
+        
+        if (days < 7) {
+            btnTabTrend.disabled = true;
+            btnTabTrend.style.opacity = "0.5";
+            btnTabTrend.style.cursor = "not-allowed";
+            btnTabTrend.title = "Trend analysis requires at least 7 days of data.";
+        } else {
+            btnTabTrend.disabled = false;
+            btnTabTrend.style.opacity = "1";
+            btnTabTrend.style.cursor = "pointer";
+            btnTabTrend.title = "";
+        }
+    }
+    
+    if (completedSessions.length === 0) {
+        if (emptyState) emptyState.style.display = "flex";
+        canvas.style.display = "none";
+        return;
+    } else {
+        if (emptyState) emptyState.style.display = "none";
+        canvas.style.display = "block";
+    }
+    
+    // Note: We don't force 'display: block' on container here anymore, because it depends on which tab is active.
+    // The tab button clicks handle the container display.
+    
+    const labels = completedSessions.map((s, i) => `Call ${i + 1}`);
+    const data = completedSessions.map(s => s.stage5_evaluation?.transcript_evaluation?.overall_score_percentage || 0);
+    
+    const ctx = document.getElementById('trendLineChart').getContext('2d');
+    
+    if (trendLineChartInstance) trendLineChartInstance.destroy();
+    
+    trendLineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Overall Score %',
+                data: data,
+                borderColor: 'rgba(0, 120, 212, 1)',
+                backgroundColor: 'rgba(0, 120, 212, 0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(0, 120, 212, 1)',
+                pointRadius: 4,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        font: { size: 10, family: "'Outfit', sans-serif" }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: { size: 10, family: "'Outfit', sans-serif" }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: { family: "'Outfit', sans-serif" },
+                    bodyFont: { family: "'Outfit', sans-serif" }
+                }
+            }
+        }
+    });
+}
 
+function renderCharts(sessions) {
+    if (!sessions) return;
+    if (!Array.isArray(sessions)) sessions = [sessions];
+    
+    const completedSessions = sessions.filter(s => s.status !== "pending");
+    if (completedSessions.length === 0) return;
+
+    let commTotal = 0, techTotal = 0, procTotal = 0, custTotal = 0, effTotal = 0;
+    let emotionCounts = { 'Neutral': 0, 'Frustrated': 0, 'Happy': 0, 'Sad': 0, 'Angry': 0 };
+    
+    completedSessions.forEach(session => {
+        const ev = session.stage5_evaluation?.transcript_evaluation;
+        if (!ev) return;
+
+        commTotal += ((ev.communication_professionalism?.greeting_verification || 0) +
+                      (ev.communication_professionalism?.active_listening_empathy || 0) +
+                      (ev.communication_professionalism?.probing_issue || 0) +
+                      (ev.communication_professionalism?.validating_priority || 0)) / 20 * 100;
+
+        techTotal += ((ev.technical_accuracy?.accurate_troubleshooting || 0) +
+                      (ev.technical_accuracy?.solution_accuracy || 0) +
+                      (ev.technical_accuracy?.valid_escalation || 0)) / 25 * 100;
+
+        procTotal += ((ev.process_adherence?.critical_compliance || 0) +
+                      (ev.process_adherence?.ticket_documentation || 0) +
+                      (ev.process_adherence?.time_entry_agreement || 0)) / 20 * 100;
+
+        custTotal += ((ev.customer_experience?.incident_ownership || 0) +
+                      (ev.customer_experience?.stakeholder_communication || 0) +
+                      (ev.customer_experience?.proper_closing_satisfaction || 0)) / 20 * 100;
+
+        effTotal  += ((ev.efficiency_metrics?.first_call_resolution || 0) +
+                      (ev.efficiency_metrics?.thirty_minute_rule || 0) +
+                      (ev.efficiency_metrics?.minimal_transfers_holds || 0)) / 10 * 100;
+
+        const agentSpk = ev.agent_speaker_label || "Agent";
+        const emotionsRaw = session.stage5_evaluation?.speaker_emotions || {};
+        
+        if (agentSpk && emotionsRaw[agentSpk] && emotionsRaw[agentSpk].all_emotions && Object.keys(emotionsRaw[agentSpk].all_emotions).length > 0) {
+            Object.entries(emotionsRaw[agentSpk].all_emotions).forEach(([k, v]) => {
+                if (emotionCounts[k]) emotionCounts[k] += v;
+                else emotionCounts[k] = v;
+            });
+        } else {
+            Object.values(emotionsRaw).forEach(e => {
+                let em = (e.emotion || 'neutral').toLowerCase();
+                em = em.charAt(0).toUpperCase() + em.slice(1);
+                if (emotionCounts[em] !== undefined) emotionCounts[em]++;
+                else emotionCounts[em] = 1;
+            });
+        }
+    });
+
+    const count = completedSessions.length;
+    const commAvg = commTotal / count;
+    const techAvg = techTotal / count;
+    const procAvg = procTotal / count;
+    const custAvg = custTotal / count;
+    const effAvg = effTotal / count;
+
+    const ctx = document.getElementById('qaRadarChart').getContext('2d');
+    
     const qaData = {
         labels: ['Communication', 'Tech Accuracy', 'Process', 'Customer Exp', 'Efficiency'],
         datasets: [{
-            label: 'Agent Score %',
-            data: [
-                (commScore / 20) * 100,
-                (techScore / 25) * 100, // 25 because KB is -1
-                (procScore / 20) * 100,
-                (custScore / 20) * 100,
-                (effScore / 10) * 100
-            ],
+            label: 'Average Score %',
+            data: [commAvg, techAvg, procAvg, custAvg, effAvg],
             backgroundColor: 'rgba(0, 120, 212, 0.2)',
-            borderColor: '#0078d4',
-            pointBackgroundColor: '#107c41',
+            borderColor: 'rgba(0, 120, 212, 1)',
+            pointBackgroundColor: 'rgba(0, 120, 212, 1)',
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#107c41',
+            pointHoverBorderColor: 'rgba(0, 120, 212, 1)',
             borderWidth: 2,
             fill: true
         }]
     };
 
     if (qaRadarChartInstance) qaRadarChartInstance.destroy();
-    qaRadarChartInstance = new Chart(document.getElementById('qaRadarChart'), {
+    qaRadarChartInstance = new Chart(ctx, {
         type: 'radar',
         data: qaData,
         options: {
+            animation: {
+                duration: 1500,
+                easing: 'easeOutQuart'
+            },
+            layout: {
+                padding: { top: 30, bottom: 30, left: 35, right: 35 }
+            },
             scales: {
                 r: {
-                    angleLines: { color: 'rgba(128,128,128,0.2)' },
-                    grid: { color: 'rgba(128,128,128,0.2)' },
-                    pointLabels: { font: { size: 11, family: 'Outfit' }, color: '#616161' },
-                    suggestedMin: 0,
-                    suggestedMax: 100
+                    angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    pointLabels: {
+                        font: { family: 'Outfit', size: 14, weight: '600' },
+                        color: '#333'
+                    },
+                    ticks: {
+                        min: 0,
+                        max: 100,
+                        stepSize: 20,
+                        backdropColor: 'transparent',
+                        font: { family: 'Outfit', size: 12 },
+                        color: '#666'
+                    }
                 }
             },
-            plugins: { legend: { display: false } },
-            elements: { line: { tension: 0.3 } }
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#555',
+                    titleFont: { family: 'Outfit', size: 14, weight: 'bold' },
+                    bodyFont: { family: 'Outfit', size: 14 },
+                    callbacks: {
+                        label: function(context) { return `Score: ${context.raw.toFixed(1)}%`; }
+                    }
+                }
+            }
         }
     });
 
-    // Emotion Polar Area Chart
-    const agentSpk = ev.agent_speaker_label;
-    const emotions = session.stage5_evaluation?.speaker_emotions || {};
-    
-    let emotionCounts = {};
-    if (agentSpk && emotions[agentSpk] && emotions[agentSpk].all_emotions && Object.keys(emotions[agentSpk].all_emotions).length > 0) {
-        // Use detailed smallest.ai emotions for the agent
-        emotionCounts = emotions[agentSpk].all_emotions;
-    } else {
-        // Fallback or empty if smallest.ai failed
-        emotionCounts = { 'Neutral': 0, 'Frustrated': 0, 'Happy': 0, 'Sad': 0, 'Angry': 0 };
-        Object.values(emotions).forEach(e => {
-            let em = (e.emotion || 'neutral').toLowerCase();
-            em = em.charAt(0).toUpperCase() + em.slice(1);
-            if (emotionCounts[em] !== undefined) emotionCounts[em]++;
-            else emotionCounts[em] = 1;
-        });
-    }
-    
     let labels = [];
     let dataCounts = [];
     let colors = [];
-    
+
     Object.keys(emotionCounts).forEach(k => {
         let val = emotionCounts[k];
-        if (val > 0) {
-            labels.push(k);
-            dataCounts.push(val);
-            
-            const keyLower = k.toLowerCase();
-            if(keyLower.includes('neutral')) colors.push('rgba(200, 200, 200, 0.7)');
-            else if(keyLower.includes('frustrat') || keyLower.includes('anger') || keyLower.includes('angry')) colors.push('rgba(209, 52, 56, 0.7)');
-            else if(keyLower.includes('happy') || keyLower.includes('happiness')) colors.push('rgba(16, 124, 65, 0.7)');
-            else if(keyLower.includes('sad') || keyLower.includes('sadness')) colors.push('rgba(0, 120, 212, 0.7)');
-            else colors.push('rgba(98, 100, 167, 0.7)');
-        }
+        if (val === 0) return; 
+        labels.push(k);
+        dataCounts.push(val);
+
+        const keyLower = k.toLowerCase();
+        if(keyLower.includes('neutral')) colors.push('rgba(200, 200, 200, 0.7)');
+        else if(keyLower.includes('frustrat') || keyLower.includes('anger') || keyLower.includes('angry')) colors.push('rgba(209, 52, 56, 0.7)');
+        else if(keyLower.includes('happy') || keyLower.includes('happiness')) colors.push('rgba(16, 124, 65, 0.7)');
+        else if(keyLower.includes('sad') || keyLower.includes('sadness')) colors.push('rgba(0, 120, 212, 0.7)');
+        else colors.push('rgba(98, 100, 167, 0.7)');
     });
+    
+    if (dataCounts.length === 0) {
+        labels = ['Neutral']; dataCounts = [1]; colors = ['rgba(200, 200, 200, 0.7)'];
+    }
 
     if (emotionPolarChartInstance) emotionPolarChartInstance.destroy();
     emotionPolarChartInstance = new Chart(document.getElementById('emotionPolarChart'), {
@@ -1016,13 +1466,41 @@ function renderCharts(session) {
             labels: labels,
             datasets: [{
                 data: dataCounts,
-                backgroundColor: colors,
-                borderWidth: 1
+                backgroundColor: colors.map(c => c.replace('0.7', '0.85')),
+                hoverBackgroundColor: colors.map(c => c.replace('0.7', '1')),
+                borderWidth: 0,
+                hoverOffset: 8
             }]
         },
         options: {
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 1500,
+                easing: 'easeOutQuart'
+            },
+            cutout: '50%',
             plugins: {
-                legend: { position: 'bottom', labels: { font: { family: 'Outfit' } } }
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { family: 'Outfit', size: 12 },
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#333',
+                    bodyColor: '#666',
+                    titleFont: { family: 'Outfit', size: 14 },
+                    bodyFont: { family: 'Outfit', size: 13, weight: 'bold' },
+                    padding: 12,
+                    cornerRadius: 8,
+                    borderColor: 'rgba(0,0,0,0.05)',
+                    borderWidth: 1
+                }
             }
         }
     });
@@ -1030,23 +1508,97 @@ function renderCharts(session) {
 
 // Upload & Poll Logic
 async function startAnalysis() {
-    if (!selectedFile) return alert("Select audio file.");
-    const topic = selectedFile.name.replace(/\.[^/.]+$/, "");
-    newAnalysisModal.classList.remove("open");
-    progressPanel.classList.add("open");
-    updateProgressBar("Queueing audio file analysis task...", 5);
-    
+    if (!selectedFiles || selectedFiles.length === 0) return alert("Please select a file to upload.");
+
+    // Check if it's a zip file
+    const isZip = document.querySelector('input[name="uploadType"]:checked').value === "zip";
+    if (isZip || selectedFiles[0].name.toLowerCase().endsWith('.zip')) {
+        return startBulkAnalysis();
+    }
+
+    unifiedUploadModal.classList.remove("open");
+
+    for (let file of selectedFiles) {
+        const topic = file.name.replace(/\.[^/.]+$/, "");
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("topic", topic);
+        if (analysisAgentName && analysisAgentName.value) {
+            formData.append("agent_name", analysisAgentName.value);
+        }
+        if (analysisAgentName && analysisAgentName.dataset.id) {
+            formData.append("agent_id", analysisAgentName.dataset.id);
+        }
+
+        progressPanel.classList.add("open");
+        progressMessage.textContent = `Uploading ${file.name}...`;
+        progressBarFill.style.width = "50%";
+
+        try {
+            const res = await fetch("/api/analyze", {
+                method: "POST",
+                body: formData
+            });
+            if (res.ok) {
+                const data = await res.json();
+                progressMessage.textContent = `Upload complete (${file.name}). Processing...`;
+                progressBarFill.style.width = "100%";
+                pollSessionStatus(data.session_id, file.name);
+                await new Promise(r => setTimeout(r, 1000));
+            } else {
+                alert(`Analysis failed to start for ${file.name}.`);
+            }
+        } catch(e) {
+            console.error(e);
+            alert(`Upload error for ${file.name}.`);
+        }
+    }
+    setTimeout(() => {
+        progressPanel.classList.remove("open");
+        progressBarFill.style.width = "0%";
+    }, 2000);
+}
+
+async function startBulkAnalysis() {
     const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("topic", topic);
+    formData.append("file", selectedFiles[0]);
+    if (analysisAgentName && analysisAgentName.value) {
+        formData.append("agent_name", analysisAgentName.value);
+    }
+    if (analysisAgentName && analysisAgentName.dataset.id) {
+        formData.append("agent_id", analysisAgentName.dataset.id);
+    }
+
+    unifiedUploadModal.classList.remove("open");
+
+    progressPanel.classList.add("open");
+    progressMessage.textContent = "Uploading batch ZIP file...";
+    progressBarFill.style.width = "50%";
 
     try {
-        const response = await fetch("/api/analyze", { method: "POST", body: formData });
+        const response = await fetch("/api/upload/bulk", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Bulk upload failed");
+        }
+
         const data = await response.json();
-        pollAnalysisStatus(data.session_id);
+        progressMessage.textContent = "Batch upload complete. Processing " + data.sessions_created + " files...";
+        progressBarFill.style.width = "100%";
+        setTimeout(() => progressPanel.classList.remove("open"), 2500);
+
+        if (currentAgentId) {
+            selectAgent(currentAgentId, currentAgentName);
+        } else {
+            loadAgents();
+        }
     } catch (err) {
+        alert(err.message);
         progressPanel.classList.remove("open");
-        alert("Failed to start analysis");
     }
 }
 
@@ -1092,6 +1644,160 @@ async function deleteCurrentSession() {
         await fetch(`/api/sessions/${currentSessionId}`, { method: "DELETE" });
         readingPaneContent.classList.add("hidden");
         emptyState.classList.remove("hidden");
-        if (currentAgentName) selectAgent(currentAgentName); // reload current agent's sessions
+        if (currentAgentId) selectAgent(currentAgentId, currentAgentName); // reload current agent's sessions
     }
 }
+
+async function submitNewAgent() {
+    if(!newAgentNameInput.value) return alert("Agent name required.");
+    
+    const idInput = document.getElementById("newAgentIdInput");
+    if(!idInput || !idInput.value) return alert("Agent Email required.");
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(idInput.value)) {
+        return alert("Please enter a valid email address.");
+    }
+    
+    const locInput = document.getElementById("newAgentLocationInput");
+    if(!locInput || !locInput.value) return alert("Location required.");
+    
+    const depInput = document.getElementById("newAgentDepartmentInput");
+    if(!depInput || !depInput.value) return alert("Department required.");
+
+    const formData = new FormData();
+    formData.append("agent_name", newAgentNameInput.value);
+    formData.append("agent_id", idInput.value);
+    formData.append("location", locInput.value);
+    formData.append("department", depInput.value);
+
+    try {
+        const res = await fetch("/api/agents/add", { method: "POST", body: formData });
+        if(res.ok) {
+            const data = await res.json();
+            if (data.is_duplicate) {
+                alert("Agent with this email already exists.");
+            } else {
+                alert("Agent added successfully.");
+            }
+            addAgentModal.classList.remove("open");
+            addAgentForm.reset();
+            loadAgents();
+        } else {
+            throw new Error("Failed to add agent.");
+        }
+    } catch(err) {
+        alert(err.message);
+    }
+}
+
+async function startBulkAddAgents() {
+    if(!selectedBulkFile) return alert("Select a CSV file.");
+    const formData = new FormData();
+    formData.append("file", selectedBulkFile);
+
+    try {
+        const msgBox = document.getElementById("bulkUploadMessage");
+        msgBox.style.display = "none";
+        msgBox.innerHTML = "";
+        
+        const res = await fetch("/api/agents/bulk", { method: "POST", body: formData });
+        if(res.ok) {
+            const data = await res.json();
+            bulkAddAgentsForm.reset();
+            selectedBulkFile = null;
+            document.getElementById("bulkAgentsFileInfo").textContent = "Supports .CSV only";
+            loadAgents();
+            
+            msgBox.style.display = "block";
+            let htmlMsg = "";
+            if (data.agents_added === 0) {
+                htmlMsg = `<div style="color: var(--accent-red); font-weight: bold; margin-bottom: 5px;">0 agents added. All agents were duplicates or invalid.</div>`;
+            } else {
+                htmlMsg = `<div style="color: var(--outlook-green); font-weight: bold; margin-bottom: 5px;">Successfully added ${data.agents_added} new agent(s).</div>`;
+            }
+            
+            if (data.rejected && data.rejected.length > 0) {
+                const csvRows = ["agent_name,agent_email,reason"];
+                data.rejected.forEach(r => csvRows.push(`"${r.agent_name}","${r.agent_email}","${r.reason}"`));
+                const csvString = csvRows.join("\\n");
+                const blob = new Blob([csvString], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                
+                htmlMsg += `<div style="margin-top: 8px;">${data.rejected.length} agent(s) were rejected. <a href="${url}" download="rejected_agents.csv" class="fluent-link" style="color: var(--outlook-blue); font-weight: bold;">Download Reject Report (CSV)</a></div>`;
+            }
+            
+            msgBox.innerHTML = htmlMsg;
+        } else {
+            throw new Error("Failed to bulk add agents.");
+        }
+    } catch(err) {
+        alert(err.message);
+    }
+}
+
+// Make Modals Draggable
+function makeDraggable(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    const content = modal.querySelector('.modal-content');
+    const header = modal.querySelector('.modal-header');
+    if (!content || !header) return;
+
+    header.style.cursor = 'move';
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = content.getBoundingClientRect();
+        // Position relative to viewport
+        initialX = rect.left;
+        initialY = rect.top;
+        
+        // Switch to absolute positioning if not already
+        if (content.style.position !== 'absolute') {
+            content.style.position = 'absolute';
+            content.style.left = initialX + 'px';
+            content.style.top = initialY + 'px';
+            content.style.transform = 'none'; // Clear any centering transforms
+            content.style.margin = '0'; // Clear auto margins
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        content.style.left = (initialX + dx) + 'px';
+        content.style.top = (initialY + dy) + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+}
+
+// Apply draggability
+makeDraggable('addAgentModal');
+makeDraggable('analyticsModal');
+makeDraggable('unifiedUploadModal');
+
+window.deleteAgent = async function(event, agentId) {
+    event.stopPropagation();
+    if(confirm("Are you sure you want to mark this agent as deleted? This will disable audio uploads for them.")) {
+        try {
+            await fetch(`/api/agents/${encodeURIComponent(agentId)}`, { method: "DELETE" });
+            loadAgents();
+        } catch(e) {
+            alert("Failed to delete agent.");
+        }
+    }
+};
