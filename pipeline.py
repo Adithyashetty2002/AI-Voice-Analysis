@@ -387,26 +387,28 @@ class VoiceAnalysisPipeline:
         """
         Skips audio processing (Stages 1 and 2) and re-runs LLM evaluation (Stages 4 and 5) on existing data.
         """
-        import json
+        from config import get_db
+        import models
+        
         session_audio_dir = os.path.join(output_base_dir, "audio", session_id)
         export_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sessions")
         
-        # Load the existing session to get the raw turns
-        session_json_path = os.path.join(export_data_dir, f"{session_id}.json")
-        if not os.path.exists(session_json_path):
-            raise FileNotFoundError(f"Session data not found: {session_json_path}")
+        with next(get_db()) as db:
+            recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+            if not recording or not recording.analysis_result or not recording.analysis_result.raw_llm_output:
+                raise FileNotFoundError(f"Session data not found in DB: {session_id}")
             
-        with open(session_json_path, "r", encoding="utf-8") as f:
-            existing_session = json.load(f)
-            
-        # The original turns are already formatted by Stage 3 and saved in the JSON.
-        # But wait, we need the raw interleaved turns for Stage 5.
-        raw_turns_path = os.path.join(export_data_dir, f"{session_id}_conversation.json")
-        if os.path.exists(raw_turns_path):
-            with open(raw_turns_path, "r", encoding="utf-8") as f:
-                raw_turns = json.load(f)
-        else:
-            raw_turns = existing_session.get("turns", [])
+            # Make a copy so we don't accidentally mutate the dict in place before commit
+            import copy
+            existing_session = copy.deepcopy(recording.analysis_result.raw_llm_output)
+            raw_turns = []
+            for t in sorted(recording.transcripts, key=lambda x: x.start_time):
+                raw_turns.append({
+                    "speaker": t.speaker_label,
+                    "start": t.start_time,
+                    "end": t.end_time,
+                    "text": t.text
+                })
             
         api_keys = {
             "OPENAI": os.getenv("OPENAI_API_KEY", ""),

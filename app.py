@@ -19,13 +19,23 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*ffmpeg or 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 import uuid
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 import shutil
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+import hashlib
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from config import get_db, SessionLocal, COLOR_EXCELLENT, COLOR_GOOD, COLOR_NEEDS_IMPROVEMENT, COLOR_NA
+import models
+from s3_storage import s3_client
 import xml.etree.ElementTree as ET
 from xml.dom.minidom import parseString
 
@@ -167,15 +177,57 @@ def run_analysis_task(session_id: str, temp_audio_path: str, topic: str, agent_n
         if agent_id:
             result["agent_id"] = agent_id
         
-        # Save session database file to disk
-        session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-        with open(session_file, "w", encoding="utf-8") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
-            
-        # Also save as XML for LLM Output
+        # Save session to PostgreSQL
+        with SessionLocal() as db:
+            recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+            if recording:
+                recording.pipeline_status = "success"
+                recording.duration = result.get("metrics", {}).get("total_audio_duration_seconds")
+                
+                # Insert Speakers
+                speaker_stats = result.get("metrics", {}).get("speaker_statistics", {})
+                for spk_label in speaker_stats.keys():
+                    speaker = models.Speaker(recording_uuid=session_id, speaker_label=spk_label, mapped_name="Unknown")
+                    db.add(speaker)
+                
+                # Insert Transcripts
+                for turn in result.get("turns", []):
+                    transcript = models.Transcript(
+                        recording_uuid=session_id,
+                        speaker_label=turn.get("speaker", "UNKNOWN"),
+                        start_time=turn.get("start", 0.0),
+                        end_time=turn.get("end", 0.0),
+                        text=turn.get("text", ""),
+                        words=turn.get("words", [])
+                    )
+                    db.add(transcript)
+                    
+                # Insert Analysis Result
+                eval_data = result.get("stage5_evaluation", {})
+                
+                # Update agent performance metrics for filtering
+                transcript_eval = eval_data.get("transcript_evaluation", {})
+                if transcript_eval.get("agent_name") and transcript_eval.get("agent_name") not in ["Unknown Agent", "[private_person]"]:
+                    recording.agent_name = transcript_eval.get("agent_name")
+                    recording.agent_id = recording.agent_name.lower().replace(" ", "_")
+
+                analysis = models.AnalysisResult(
+                    recording_uuid=session_id,
+                    call_summary=eval_data.get("call_summary", ""),
+                    sentiment_analysis=eval_data.get("sentiment_analysis", {}),
+                    speaker_intents=eval_data.get("speaker_intents", {}),
+                    qa_scorecard=eval_data.get("transcript_evaluation", {}),
+                    action_items=eval_data.get("action_items", []),
+                    raw_llm_output=result # Store the exact full dict for perfect backward compatibility
+                )
+                db.add(analysis)
+                db.commit()
+                
+        # Also save as XML for LLM Output (Keeping this for legacy LLM compat if needed)
         xml_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.xml")
         llm_data = result.get("stage5_evaluation", {}).get("transcript_evaluation", {})
         llm_data = map_qa_keys(llm_data)
+        os.makedirs(SESSIONS_DB_DIR, exist_ok=True)
         with open(xml_file, "w", encoding="utf-8") as f:
             f.write(dict_to_xml_str(llm_data, root_tag="LLM_Output"))
             
@@ -189,6 +241,14 @@ def run_analysis_task(session_id: str, temp_audio_path: str, topic: str, agent_n
         
     except Exception as e:
         logger.error(f"Session {session_id} failed: {str(e)}")
+        
+        with SessionLocal() as db:
+            recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+            if recording:
+                recording.pipeline_status = "failed"
+                recording.error_message = str(e)
+                db.commit()
+                
         ACTIVE_TASKS[session_id].update({
             "status": "failed",
             "progress_message": f"Analysis failed: {str(e)}",
@@ -222,10 +282,46 @@ def run_reevaluation_task(session_id: str, topic: str):
             progress_callback=update_progress
         )
         
-        session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-        with open(session_file, "w", encoding="utf-8") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
-            
+        with next(get_db()) as db:
+            recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+            if recording:
+                stage5 = result.get("stage5_evaluation", {})
+                eval_data = stage5.get("transcript_evaluation", {})
+                
+                if recording.analysis_result:
+                    recording.analysis_result.qa_scorecard = eval_data
+                    recording.analysis_result.raw_llm_output = result
+                else:
+                    recording.analysis_result = models.AnalysisResult(
+                        recording_uuid=recording.uuid,
+                        qa_scorecard=eval_data,
+                        raw_llm_output=result
+                    )
+                
+                # Update pipeline status
+                recording.pipeline_status = "success"
+                
+                # Update agent performance metrics
+                stage5 = result.get("stage5_evaluation", {})
+                eval_data = stage5.get("transcript_evaluation", {})
+                new_agent_name = eval_data.get("agent_name")
+                if new_agent_name and new_agent_name not in ["Unknown Agent", "[private_person]"]:
+                    recording.agent_name = new_agent_name
+                
+                # We can also update agent_id if agent_name changed
+                if recording.agent_name and recording.agent_name not in ["Unknown Agent", "[private_person]"]:
+                    recording.agent_id = recording.agent_name.lower().replace(" ", "_")
+                
+                recording.qa_score = float(eval_data.get("overall_score_percentage", 0))
+                
+                # Try to extract emotional summary
+                emotions = stage5.get("speaker_emotions", {})
+                agent_speaker = eval_data.get("agent_speaker_label", "SPEAKER_00")
+                if agent_speaker and agent_speaker in emotions:
+                    recording.primary_emotion = emotions[agent_speaker].get("emotion", "Neutral")
+                    
+                db.commit()
+                
         xml_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.xml")
         llm_data = result.get("stage5_evaluation", {}).get("transcript_evaluation", {})
         llm_data = map_qa_keys(llm_data)
@@ -260,7 +356,8 @@ async def bulk_upload_endpoint(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     agent_name: str = Form(None),
-    agent_id: str = Form(None)
+    agent_id: str = Form(None),
+    db: Session = Depends(get_db)
 ):
     if not file.filename.endswith('.zip'):
         raise HTTPException(status_code=400, detail="Must upload a .zip file.")
@@ -277,27 +374,47 @@ async def bulk_upload_endpoint(
             if filename.startswith("__MACOSX") or not filename.lower().endswith(('.wav', '.mp3', '.m4a', '.flac')):
                 continue
                 
+            with zip_ref.open(filename) as source:
+                file_bytes = source.read()
+            
+            file_hash = hashlib.md5(file_bytes).hexdigest()
+            existing_audit = db.query(models.UploadAudit).filter(models.UploadAudit.md5_checksum == file_hash).first()
+            if existing_audit:
+                logger.warning(f"Skipping duplicate file in bulk upload: {filename}")
+                continue
+                
             session_id = str(uuid.uuid4())
             audio_path = os.path.join(WORKSPACE_DIR, "data", "temp", f"{session_id}_{os.path.basename(filename)}")
             
-            with zip_ref.open(filename) as source, open(audio_path, "wb") as target:
-                shutil.copyfileobj(source, target)
+            with open(audio_path, "wb") as target:
+                target.write(file_bytes)
                 
             topic = os.path.basename(filename)
             
-            session_data = {
-                "session_id": session_id,
-                "status": "pending",
-                "agent_name": agent_name or "Unknown Agent",
-                "agent_id": agent_id,
-                "topic": topic,
-                "created_at": time.time()
-            }
+            s3_object_name = f"uploads/{session_id}_{os.path.basename(filename)}"
+            s3_success = s3_client.upload_file(audio_path, s3_object_name)
+            if not s3_success:
+                logger.warning(f"Failed to upload {filename} to S3 in bulk upload.")
             
-            session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-            with open(session_file, "w", encoding="utf-8") as sf:
-                json.dump(session_data, sf, indent=2, ensure_ascii=False)
-                
+            audit = models.UploadAudit(
+                md5_checksum=file_hash,
+                original_file_name=os.path.basename(filename),
+                uuid=session_id,
+                s3_object_name=s3_object_name
+            )
+            db.add(audit)
+            
+            recording = models.Recording(
+                uuid=session_id,
+                title=topic,
+                s3_key=s3_object_name,
+                pipeline_status="pending",
+                agent_id=agent_id,
+                agent_name=agent_name
+            )
+            db.add(recording)
+            db.commit()
+            
             ACTIVE_TASKS[session_id] = {
                 "status": "pending",
                 "progress_message": "Queueing audio file analysis...",
@@ -313,23 +430,32 @@ async def bulk_upload_endpoint(
 @app.post("/api/analyze/pending/{session_id}")
 async def analyze_pending_endpoint(
     session_id: str,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
 ):
-    session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-    if not os.path.exists(session_file):
+    recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+    if not recording:
         raise HTTPException(status_code=404, detail="Session not found.")
         
-    with open(session_file, "r") as f:
-        data = json.load(f)
-        
-    if data.get("status") != "pending":
+    if recording.pipeline_status != "pending" and recording.pipeline_status != "failed":
         raise HTTPException(status_code=400, detail="Session is already processed or processing.")
         
-    audio_path = data.get("audio_path")
-    topic = data.get("topic")
+    s3_key = recording.s3_key
+    if not s3_key:
+        raise HTTPException(status_code=400, detail="S3 Key missing for pending session.")
+        
+    # Download from S3 to temp folder if not already present locally
+    temp_dir = os.path.join(WORKSPACE_DIR, "data", "temp")
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_audio_path = os.path.join(temp_dir, os.path.basename(s3_key))
     
-    if not audio_path or not os.path.exists(audio_path):
-        raise HTTPException(status_code=400, detail="Audio file missing for pending session.")
+    if not os.path.exists(temp_audio_path):
+        success = s3_client.download_file(s3_key, temp_audio_path)
+        if not success and not os.path.exists(temp_audio_path):
+            raise HTTPException(status_code=404, detail="Failed to retrieve audio file from S3 and it was not found locally.")
+        
+    recording.pipeline_status = "pending"
+    db.commit()
         
     ACTIVE_TASKS[session_id] = {
         "status": "pending",
@@ -337,7 +463,7 @@ async def analyze_pending_endpoint(
         "progress_percent": 0
     }
     
-    background_tasks.add_task(run_analysis_task, session_id, audio_path, topic)
+    background_tasks.add_task(run_analysis_task, session_id, temp_audio_path, recording.title or "", recording.agent_name, recording.agent_id)
     return {"session_id": session_id, "status": "processing"}
 
 @app.post("/api/analyze")
@@ -346,13 +472,22 @@ async def analyze_audio_endpoint(
     file: UploadFile = File(...),
     topic: str = Form(...),
     agent_name: str = Form(None),
-    agent_id: str = Form(None)
+    agent_id: str = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     API endpoint for uploading audio files to start background scoring analysis.
     """
     if not file or not file.filename:
         raise HTTPException(status_code=400, detail="Invalid audio file.")
+        
+    file_bytes = await file.read()
+    file_hash = hashlib.md5(file_bytes).hexdigest()
+    
+    # Check deduplication
+    existing_audit = db.query(models.UploadAudit).filter(models.UploadAudit.md5_checksum == file_hash).first()
+    if existing_audit:
+        return JSONResponse(status_code=409, content={"status": "error", "message": "This file has already been uploaded."})
         
     session_id = str(uuid.uuid4())
     logger.info(f"Received audio analysis upload. Session: {session_id}, Topic: {topic}")
@@ -363,8 +498,34 @@ async def analyze_audio_endpoint(
     temp_audio_path = os.path.join(temp_dir, f"{session_id}_{file.filename}")
     
     with open(temp_audio_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(file_bytes)
         
+    # Upload to S3
+    s3_object_name = f"uploads/{session_id}_{file.filename}"
+    s3_success = s3_client.upload_file(temp_audio_path, s3_object_name)
+    if not s3_success:
+        logger.warning(f"Failed to upload {file.filename} to S3, but continuing locally.")
+        
+    # Create DB records
+    audit = models.UploadAudit(
+        md5_checksum=file_hash,
+        original_file_name=file.filename,
+        uuid=session_id,
+        s3_object_name=s3_object_name
+    )
+    db.add(audit)
+    
+    recording = models.Recording(
+        uuid=session_id,
+        title=topic,
+        s3_key=s3_object_name,
+        pipeline_status="pending",
+        agent_id=agent_id,
+        agent_name=agent_name
+    )
+    db.add(recording)
+    db.commit()
+    
     # Set initial task progress state
     ACTIVE_TASKS[session_id] = {
         "status": "pending",
@@ -386,9 +547,10 @@ async def reevaluate_session_endpoint(
     """
     API endpoint to re-run only LLM evaluation on an existing session.
     """
-    session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-    if not os.path.exists(session_file):
-        raise HTTPException(status_code=404, detail="Session report not found.")
+    with next(get_db()) as db:
+        recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+        if not recording:
+            raise HTTPException(status_code=404, detail="Session report not found.")
         
     logger.info(f"Received re-evaluation request for session: {session_id}, Topic: {topic}")
     
@@ -401,6 +563,16 @@ async def reevaluate_session_endpoint(
     background_tasks.add_task(run_reevaluation_task, session_id, topic)
     
     return {"session_id": session_id, "status": "processing"}
+
+@app.get("/api/ui-config")
+async def get_ui_config():
+    """Returns UI configuration loaded from the .env file."""
+    return {
+        "colorExcellent": COLOR_EXCELLENT,
+        "colorGood": COLOR_GOOD,
+        "colorNeedsImprovement": COLOR_NEEDS_IMPROVEMENT,
+        "colorNA": COLOR_NA
+    }
 
 @app.get("/api/status/{session_id}")
 async def get_analysis_status(session_id: str):
@@ -614,7 +786,7 @@ async def list_agents():
     return result
 
 @app.get("/api/agents/{agent_id}/sessions")
-async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | None = None, end_date: str | None = None, start_ts: float | None = None, end_ts: float | None = None):
+async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | None = None, end_date: str | None = None, start_ts: float | None = None, end_ts: float | None = None, db: Session = Depends(get_db)):
     """
     Retrieves sessions for a specific agent filtered by days or date range.
     """
@@ -627,23 +799,19 @@ async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | No
     
     if start_date and end_date and not start_timestamp:
         try:
-            # assuming local time or utc. simple local conversion:
             start_timestamp = datetime.strptime(start_date, "%Y-%m-%d").timestamp()
             end_timestamp = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59).timestamp()
         except Exception:
             pass
-    
-    sessions = []
-    
-    if not os.path.exists(SESSIONS_DB_DIR):
-        return sessions
-
-    for filename in os.listdir(SESSIONS_DB_DIR):
-        if filename.endswith(".json") and "_speaker_" not in filename and "_conversation" not in filename and "_diarization" not in filename:
-            filepath = os.path.join(SESSIONS_DB_DIR, filename)
             
-            # Date filter using file modification time
-            file_mtime = os.path.getmtime(filepath)
+    sessions = []
+    try:
+        recordings = db.query(models.Recording).filter(
+            (models.Recording.agent_id == agent_id) | (models.Recording.agent_name == agent_id)
+        ).all()
+        
+        for recording in recordings:
+            file_mtime = recording.created_at.timestamp() if recording.created_at else 0
             
             if start_timestamp and end_timestamp:
                 if file_mtime < start_timestamp or file_mtime > end_timestamp:
@@ -651,89 +819,96 @@ async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | No
             elif file_mtime < cutoff_time:
                 continue
                 
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                
+            session_dict = {
+                "session_id": recording.uuid,
+                "topic": recording.title or "",
+                "status": recording.pipeline_status,
+                "created_at": file_mtime,
+                "stage5_evaluation": {
+                    "transcript_evaluation": {},
+                    "speaker_emotions": {}
+                }
+            }
+            
+            analysis = recording.analysis_result
+            if analysis and analysis.raw_llm_output:
+                data = analysis.raw_llm_output
                 stage5 = data.get("stage5_evaluation", {})
-                transcript_eval = stage5.get("transcript_evaluation", {})
-                file_agent_name = data.get("agent_name") or transcript_eval.get("agent_name", "Unknown Agent")
-                file_agent_id = data.get("agent_id") or file_agent_name
+                session_dict["stage5_evaluation"]["transcript_evaluation"] = stage5.get("transcript_evaluation", {})
+                session_dict["stage5_evaluation"]["speaker_emotions"] = stage5.get("speaker_emotions", {})
                 
-                if file_agent_id == agent_id:
-                    sessions.append({
-                        "session_id": data.get("session_id", filename.replace(".json", "")),
-                        "topic": data.get("topic", ""),
-                        "status": data.get("status", "success"),
-                        "created_at": file_mtime,
-                        "stage5_evaluation": {
-                            "transcript_evaluation": transcript_eval,
-                            "speaker_emotions": stage5.get("speaker_emotions", {})
-                        }
-                    })
-                    
-            except Exception as e:
-                logger.error(f"Error loading session file {filename}: {str(e)}")
-                
+            sessions.append(session_dict)
+    except Exception as e:
+        logger.error(f"Error querying list_agent_sessions: {e}")
+        
     # Sort sessions by timestamp descending (newest first)
     sessions.sort(key=lambda x: x.get("created_at", 0), reverse=True)
     return sessions
 
 @app.get("/api/sessions")
-async def list_sessions():
+async def list_sessions(db: Session = Depends(get_db)):
     """
     Retrieves all past saved analysis sessions (for the Outlook sidebar list).
     """
     sessions = []
-    for filename in os.listdir(SESSIONS_DB_DIR):
-        if filename.endswith(".json") and "_speaker_" not in filename and "_conversation" not in filename and "_diarization" not in filename:
-            filepath = os.path.join(SESSIONS_DB_DIR, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+    try:
+        recordings = db.query(models.Recording).order_by(models.Recording.created_at.desc()).all()
+        for recording in recordings:
+            session_dict = {
+                "session_id": recording.uuid,
+                "topic": recording.title or "",
+                "status": recording.pipeline_status,
+                "total_duration": recording.duration or 0.0,
+                "speakers_count": 0,
+                "overall_score": 0
+            }
+            
+            analysis = recording.analysis_result
+            if analysis and analysis.raw_llm_output:
+                data = analysis.raw_llm_output
+                session_dict["total_duration"] = data.get("metrics", {}).get("total_audio_duration_seconds", recording.duration or 0.0)
+                session_dict["speakers_count"] = len(data.get("metrics", {}).get("speaker_statistics", {}))
+                session_dict["overall_score"] = data.get("stage5_evaluation", {}).get("transcript_evaluation", {}).get("overall_score_percentage", 0)
                 
-                # Exclude large raw fields to keep listing index query fast
-                sessions.append({
-                    "session_id": data.get("session_id", filename.replace(".json", "")),
-                    "topic": data.get("topic", ""),
-                    "status": data.get("status", "success"),
-                    "total_duration": data.get("metrics", {}).get("total_audio_duration_seconds", 0.0),
-                    "speakers_count": len(data.get("metrics", {}).get("speaker_statistics", {})),
-                    "overall_score": data.get("stage5_evaluation", {}).get("transcript_evaluation", {}).get("overall_score_percentage", 0)
-                })
-            except Exception as e:
-                logger.error(f"Error loading session file {filename}: {str(e)}")
-                
+            sessions.append(session_dict)
+    except Exception as e:
+        logger.error(f"Error querying list_sessions: {e}")
     return sessions
 
 @app.get("/api/sessions/{session_id}")
-async def get_session(session_id: str):
+async def get_session(session_id: str, db: Session = Depends(get_db)):
     """
     Retrieves detailed scorecard JSON data of a specific saved session.
     """
-    session_file = os.path.join(SESSIONS_DB_DIR, f"{session_id}.json")
-    if os.path.exists(session_file):
-        with open(session_file, "r", encoding="utf-8") as f:
-            return json.load(f)
-            
-    raise HTTPException(status_code=404, detail="Session report not found.")
+    recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+    if not recording:
+        raise HTTPException(status_code=404, detail="Session report not found.")
+        
+    analysis = recording.analysis_result
+    if analysis and analysis.raw_llm_output:
+        return analysis.raw_llm_output
+        
+    # Synthesize JSON for pending/failed sessions
+    return {
+        "session_id": recording.uuid,
+        "topic": recording.title or "",
+        "status": recording.pipeline_status,
+        "agent_name": recording.agent_name,
+        "agent_id": recording.agent_id,
+        "error": recording.error_message
+    }
 
 @app.delete("/api/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, db: Session = Depends(get_db)):
     """
     Deletes a specific saved analysis session and its corresponding static speaker audio directories.
     """
-    # 1. Delete all session-related files in the database directory
-    if os.path.exists(SESSIONS_DB_DIR):
-        for filename in os.listdir(SESSIONS_DB_DIR):
-            if filename.startswith(session_id):
-                file_path = os.path.join(SESSIONS_DB_DIR, filename)
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    logger.error(f"Failed to delete session file {file_path}: {e}")
+    recording = db.query(models.Recording).filter(models.Recording.uuid == session_id).first()
+    if recording:
+        db.delete(recording)
+        db.commit()
         
-    # 2. Delete corresponding audio chunks directory in static folder
+    # Delete corresponding audio chunks directory in static folder
     session_audio_dir = os.path.join(AUDIO_OUTPUT_DIR, session_id)
     if os.path.exists(session_audio_dir):
         shutil.rmtree(session_audio_dir)
@@ -752,6 +927,43 @@ async def serve_index():
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return JSONResponse(status_code=404, content={"message": "Outlook HTML interface not found. Please create static/index.html"})
+
+@app.post("/api/send_email")
+async def send_email(
+    to_email: str = Form(...),
+    subject: str = Form(...),
+    body: str = Form(...),
+    pdf_file: UploadFile = File(...)
+):
+    sender = os.getenv("GMAIL_SENDER")
+    password = os.getenv("GMAIL_APP_PASSWORD")
+    
+    if not sender or not password:
+        raise HTTPException(status_code=500, detail="Gmail credentials are not configured in the server .env file.")
+        
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = sender
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        pdf_bytes = await pdf_file.read()
+        part = MIMEApplication(pdf_bytes, Name=pdf_file.filename)
+        part['Content-Disposition'] = f'attachment; filename="{pdf_file.filename}"'
+        msg.attach(part)
+        
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender, password)
+        server.send_message(msg)
+        server.quit()
+        
+        return {"status": "success", "message": "Email sent successfully!"}
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

@@ -19,3 +19,7 @@ numpy
 openai
 matplotlib
 requests
+
+boto3
+sqlalchemy
+psycopg2-binary

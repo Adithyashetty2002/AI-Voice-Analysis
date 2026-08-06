@@ -30,6 +30,24 @@ You MUST return your response as a valid JSON object matching this exact schema:
     "thirty_minute_rule": <integer 0-3>,
     "minimal_transfers_holds": <integer 0-2>
   },
+  "speaker_emotions": {
+    "SPEAKER_00": {
+      "all_emotions": {
+        "Calm": <integer 0-10>,
+        "Frustration": <integer 0-10>,
+        "Anger": <integer 0-10>,
+        "Neutral": <integer 0-10>
+      }
+    },
+    "SPEAKER_01": {
+      "all_emotions": {
+        "Calm": <integer 0-10>,
+        "Frustration": <integer 0-10>,
+        "Anger": <integer 0-10>,
+        "Neutral": <integer 0-10>
+      }
+    }
+  },
   "overall_score_percentage": <integer 0-100>,
   "technical_reviewer_feedback": "<String detailing specific areas of improvement based ONLY on the transcript>"
 }

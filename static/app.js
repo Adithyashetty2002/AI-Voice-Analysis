@@ -6,6 +6,264 @@ let currentSessionId = null;
 let activePollInterval = null;
 let selectedFiles = [];
 
+let uiColors = {
+    excellent: "#107c41", 
+    good: "#0078d4",
+    needsImprovement: "#d13438",
+    na: "#ffb900"
+};
+
+async function loadUiConfig() {
+    try {
+        const res = await fetch("/api/ui-config");
+        if (res.ok) {
+            const data = await res.json();
+            uiColors.excellent = data.colorExcellent || uiColors.excellent;
+            uiColors.good = data.colorGood || uiColors.good;
+            uiColors.needsImprovement = data.colorNeedsImprovement || uiColors.needsImprovement;
+            uiColors.na = data.colorNA || uiColors.na;
+        }
+    } catch (e) {
+        console.error("Failed to load UI config:", e);
+    }
+}
+
+function getScoreBgColor(score, isNa = false) {
+    if (isNa) return uiColors.na;
+    if (score >= 90) return uiColors.excellent;
+    if (score >= 75) return uiColors.good;
+    return uiColors.needsImprovement;
+}
+
+function showToast(message, isError = false) {
+    const toast = document.getElementById("toastNotification");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.style.backgroundColor = isError ? "#d83b01" : "#107c41"; // Fluent red vs green
+    toast.style.visibility = "visible";
+    toast.style.opacity = "1";
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.style.visibility = "hidden", 500);
+    }, 3000);
+}
+
+let confirmCallback = null;
+function showConfirm(message, callback) {
+    const modal = document.getElementById("confirmModal");
+    const msgEl = document.getElementById("confirmModalMessage");
+    if (!modal || !msgEl) {
+        // Fallback if HTML is missing
+        if(confirm(message)) callback();
+        return;
+    }
+    msgEl.textContent = message;
+    confirmCallback = callback;
+    modal.classList.add("open");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadUiConfig();
+    
+    const btnCancel = document.getElementById("btnConfirmCancel");
+    const btnProceed = document.getElementById("btnConfirmProceed");
+    const modal = document.getElementById("confirmModal");
+    if(btnCancel) {
+        btnCancel.addEventListener("click", () => {
+            modal.classList.remove("open");
+            confirmCallback = null;
+        });
+    }
+    if(btnProceed) {
+        btnProceed.addEventListener("click", () => {
+            modal.classList.remove("open");
+            if(confirmCallback) confirmCallback();
+            confirmCallback = null;
+        });
+    }
+});
+
+// --- DOM Elements ---
+const btnFilterAgent = document.getElementById("btnFilterAgent");
+const agentsModal = document.getElementById("agentsModal");
+const agentsModalClose = document.getElementById("agentsModalClose");
+
+const emailComposeModal = document.getElementById("emailComposeModal");
+const emailComposeModalClose = document.getElementById("emailComposeModalClose");
+const emailComposeForm = document.getElementById("emailComposeForm");
+const emailComposeTo = document.getElementById("emailComposeTo");
+const emailComposeSubject = document.getElementById("emailComposeSubject");
+const emailComposeBody = document.getElementById("emailComposeBody");
+const btnSendEmailSubmit = document.getElementById("btnSendEmailSubmit");
+
+function hideForPDF(element) {
+    const toHide = element.querySelectorAll('.reading-toolbar, .toolbar-btn, button');
+    const originalStyles = [];
+    toHide.forEach(el => {
+        originalStyles.push({ el, display: el.style.display });
+        el.style.display = 'none';
+    });
+    return originalStyles;
+}
+
+function restoreForPDF(originalStyles) {
+    originalStyles.forEach(item => {
+        item.el.style.display = item.display;
+    });
+}
+
+function populatePDFTemplate(sessionData, agentName) {
+    if (!sessionData) return null;
+    const ev = sessionData.stage5_evaluation?.transcript_evaluation || {};
+    
+    const sessionListItem = window.globalAgentsList?.find(a => a.agent_id === currentAgentId) ? 
+        currentAgentSessionsData?.find(s => s.session_id === sessionData.session_id) : null;
+    
+    let dateStr = new Date().toLocaleString();
+    if (sessionListItem && sessionListItem.created_at) {
+        dateStr = new Date(sessionListItem.created_at * 1000).toLocaleString();
+    }
+    
+    document.getElementById('pdfSessionDate').textContent = dateStr;
+    document.getElementById('pdfAgentName').textContent = agentName || "Unknown Agent";
+    document.getElementById('pdfOverallScore').textContent = (ev.overall_score_percentage || 0) + '%';
+    document.getElementById('pdfSessionTopic').textContent = sessionData.topic || "N/A";
+    
+    const sumCat = (cat) => {
+        if (!cat) return 0;
+        return Object.values(cat).reduce((sum, val) => {
+            let num = parseInt(val);
+            return sum + (isNaN(num) || num < 0 ? 0 : num);
+        }, 0);
+    };
+    
+    document.getElementById('pdfCatProf').textContent = sumCat(ev.communication_professionalism) + '/20';
+    document.getElementById('pdfCatTech').textContent = sumCat(ev.technical_accuracy) + '/30';
+    document.getElementById('pdfCatProc').textContent = sumCat(ev.process_adherence) + '/20';
+    document.getElementById('pdfCatExp').textContent = sumCat(ev.customer_experience) + '/20';
+    document.getElementById('pdfCatEff').textContent = sumCat(ev.efficiency_metrics) + '/10';
+    
+    document.getElementById('pdfReviewerFeedback').textContent = ev.technical_reviewer_feedback || "No feedback provided.";
+
+    const emotionList = document.getElementById('pdfEmotionList');
+    const speakerEmotionsRaw = sessionData.stage5_evaluation?.speaker_emotions || {};
+    let emotionRowsHtml = '';
+    
+    Object.keys(speakerEmotionsRaw).forEach(spk => {
+        let sessionEmotionCounts = {};
+        if (speakerEmotionsRaw[spk].all_emotions && Object.keys(speakerEmotionsRaw[spk].all_emotions).length > 0) {
+            sessionEmotionCounts = speakerEmotionsRaw[spk].all_emotions;
+        } else {
+            let em = (speakerEmotionsRaw[spk].emotion || 'neutral').toLowerCase();
+            sessionEmotionCounts[em] = 100;
+        }
+        
+        if (Object.keys(sessionEmotionCounts).length > 0) {
+            const sortedEmotions = Object.entries(sessionEmotionCounts).sort((a, b) => b[1] - a[1]);
+            const spkLabel = spk === (ev.agent_speaker_label || "Agent") ? "Agent" : "Customer";
+            emotionRowsHtml += `<tr><td style="padding: 10px; border: 1px solid #ddd; background: #f9f9f9; font-weight: bold;" colspan="2">${spkLabel} (${spk})</td></tr>`;
+            emotionRowsHtml += sortedEmotions.map(([emo, pct]) => {
+                const capEmo = emo.charAt(0).toUpperCase() + emo.slice(1);
+                return `
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd; padding-left: 20px;">${capEmo}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${pct * 10}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    });
+    
+    if (emotionRowsHtml) {
+        emotionList.innerHTML = emotionRowsHtml;
+    } else {
+        emotionList.innerHTML = `<tr><td style="padding: 10px; border: 1px solid #ddd; font-style: italic; color: #666;" colspan="2">No emotion data available</td></tr>`;
+    }
+    
+    const transcriptContainer = document.getElementById('pdfTranscriptContainer');
+    if (sessionData.turns && sessionData.turns.length > 0) {
+        const ev = sessionData.stage5_evaluation?.transcript_evaluation || {};
+        const agentSpk = ev.agent_speaker_label || "SPEAKER_00";
+        transcriptContainer.innerHTML = sessionData.turns.map(t => {
+            const isAgent = t.speaker === agentSpk;
+            const color = isAgent ? '#0078d4' : '#333';
+            const displayName = isAgent ? 'Agent' : 'Customer';
+            return `<div style="margin-bottom: 8px; page-break-inside: avoid; word-wrap: break-word;">
+                <strong style="color: ${color};">${displayName}:</strong> 
+                <span style="color: #333; word-wrap: break-word;">${t.text}</span>
+            </div>`;
+        }).join('');
+    } else {
+        transcriptContainer.innerHTML = '<div style="color: #666; font-style: italic;">No transcript available.</div>';
+    }
+    
+    return document.getElementById('pdfExportTemplate');
+}
+
+function populateAgentPDFTemplate(agentData, sessions) {
+    if (!agentData || !sessions) return null;
+    
+    document.getElementById('pdfAgentReportDate').textContent = new Date().toLocaleString();
+    document.getElementById('pdfAgentReportName').textContent = agentData.name || "Unknown Agent";
+    
+    let totalScore = 0;
+    let emotions = {};
+    let analyzedCount = 0;
+    
+    const completedSessions = sessions.filter(s => s.status !== "pending");
+    
+    completedSessions.forEach(s => {
+        const ev = s.stage5_evaluation?.transcript_evaluation || {};
+        totalScore += (ev.overall_score_percentage || 0);
+        
+        const agentSpk = ev.agent_speaker_label || "";
+        const spkEm = s.stage5_evaluation?.speaker_emotions || {};
+        if (agentSpk && spkEm[agentSpk]) {
+            const callEmotions = spkEm[agentSpk].all_emotions || {};
+            if (Object.keys(callEmotions).length > 0) {
+                analyzedCount++;
+                Object.entries(callEmotions).forEach(([emo, pct]) => {
+                    emotions[emo.toLowerCase()] = (emotions[emo.toLowerCase()] || 0) + pct;
+                });
+            } else if (spkEm[agentSpk].emotion && spkEm[agentSpk].emotion !== "N/A") {
+                analyzedCount++;
+                const e = spkEm[agentSpk].emotion.toLowerCase();
+                emotions[e] = (emotions[e] || 0) + 100;
+            }
+        }
+    });
+    
+    const avgScore = completedSessions.length > 0 ? (totalScore / completedSessions.length) : 0;
+    document.getElementById('pdfAgentReportScore').textContent = avgScore.toFixed(1) + '%';
+    document.getElementById('pdfAgentReportCalls').textContent = completedSessions.length;
+    
+    let primaryEmotion = "Neutral";
+    let maxEm = -1;
+    if (analyzedCount > 0) {
+        Object.entries(emotions).forEach(([k, v]) => {
+            if (v > maxEm) { maxEm = v; primaryEmotion = k; }
+        });
+        primaryEmotion = primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1);
+    }
+    document.getElementById('pdfAgentReportEmotion').textContent = primaryEmotion;
+    
+    const sessionsList = document.getElementById('pdfAgentReportSessionsList');
+    sessionsList.innerHTML = completedSessions.map(s => {
+        const d = new Date(s.created_at * 1000).toLocaleDateString();
+        const t = s.topic || "N/A";
+        const score = (s.stage5_evaluation?.transcript_evaluation?.overall_score_percentage || 0).toFixed(1) + "%";
+        return `
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">${d}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${t}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${score}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    return document.getElementById('pdfAgentExportTemplate');
+}
+
 // DOM Elements
 const btnNewAnalysis = document.getElementById("btnNewAnalysis");
 const unifiedUploadModal = document.getElementById("unifiedUploadModal");
@@ -236,40 +494,21 @@ function setupEventListeners() {
     if(btnExportSessionPDF) {
         btnExportSessionPDF.addEventListener("click", () => {
             if(!currentSessionId) return;
-            const element = document.getElementById('readingPaneContent');
+            const element = populatePDFTemplate(currentSessionData, currentAgentName);
+            if (!element) return showToast("No session data available.", true);
             
-            // Unhide transcript and remove scroll for PDF
-            const transcriptContainer = document.getElementById("transcriptContentContainer");
-            const originalDisplay = transcriptContainer ? transcriptContainer.style.display : "";
-            const originalMaxHeight = transcriptContainer ? transcriptContainer.style.maxHeight : "";
-            const originalOverflow = transcriptContainer ? transcriptContainer.style.overflowY : "";
-            if (transcriptContainer) {
-                transcriptContainer.style.display = "block";
-                transcriptContainer.style.maxHeight = "none";
-                transcriptContainer.style.overflowY = "visible";
-            }
-            
-            const origElementOverflow = element.style.overflowY;
-            const origElementHeight = element.style.height;
-            element.style.overflowY = "visible";
-            element.style.height = "auto";
+            element.style.display = "block";
             
             const opt = {
               margin:       0.5,
               filename:     `Scorecard_${currentSessionId}.pdf`,
               image:        { type: 'jpeg', quality: 0.98 },
               html2canvas:  { scale: 2 },
-              jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
             
             html2pdf().set(opt).from(element).save().then(() => {
-                if (transcriptContainer) {
-                    transcriptContainer.style.display = originalDisplay;
-                    transcriptContainer.style.maxHeight = originalMaxHeight;
-                    transcriptContainer.style.overflowY = originalOverflow;
-                }
-                element.style.overflowY = origElementOverflow;
-                element.style.height = origElementHeight;
+                element.style.display = "none";
             });
         });
     }
@@ -298,8 +537,81 @@ Please review this feedback and let us know if you have any questions.
 Best regards,
 Management`;
 
-            const body = encodeURIComponent(bodyText);
-            window.location.href = `mailto:${agentEmail}?subject=${subject}&body=${body}`;
+            emailComposeTo.value = agentEmail;
+            emailComposeSubject.value = decodeURIComponent(subject);
+            emailComposeBody.value = bodyText;
+            
+            emailComposeModal.classList.add("open");
+        });
+    }
+
+    if (emailComposeModalClose) {
+        emailComposeModalClose.addEventListener("click", () => {
+            emailComposeModal.classList.remove("open");
+        });
+    }
+
+    if (emailComposeForm) {
+        emailComposeForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            
+            const btn = btnSendEmailSubmit;
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="ms-Icon ms-Icon--Sync" aria-hidden="true" style="animation: spin 1s linear infinite;"></i> Sending...';
+            btn.disabled = true;
+
+            const element = populatePDFTemplate(currentSessionData, currentAgentName);
+            if (!element) {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+                return showToast("No session data available.", true);
+            }
+            
+            element.style.display = "block";
+            
+            const opt = {
+              margin:       0.5,
+              filename:     `Scorecard_${currentSessionId}.pdf`,
+              image:        { type: 'jpeg', quality: 0.98 },
+              html2canvas:  { scale: 2 },
+              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).outputPdf('blob').then(async (pdfBlob) => {
+                element.style.display = "none";
+
+                const formData = new FormData();
+                formData.append("to_email", emailComposeTo.value);
+                formData.append("subject", emailComposeSubject.value);
+                formData.append("body", emailComposeBody.value);
+                formData.append("pdf_file", pdfBlob, `Scorecard_${currentSessionId}.pdf`);
+
+                try {
+                    const response = await fetch("/api/send_email", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        showToast("Email sent successfully!");
+                        emailComposeModal.classList.remove("open");
+                    } else {
+                        const errorData = await response.json();
+                        showToast(`Failed to send email: ${errorData.detail || 'Unknown error'}`, true);
+                    }
+                } catch (error) {
+                    showToast(`Error sending email: ${error}`, true);
+                } finally {
+                    btn.innerHTML = originalBtnHtml;
+                    btn.disabled = false;
+                }
+            }).catch(err => {
+                console.error("PDF generation error:", err);
+                showToast("Failed to generate PDF attachment.", true);
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+                element.style.display = "none";
+            });
         });
     }
 
@@ -308,27 +620,21 @@ Management`;
             if(!currentSessionData) return;
             const ev = currentSessionData.stage5_evaluation?.transcript_evaluation || {};
             
-            // Build CSV rows
-            let csvRows = [];
-            csvRows.push(['Metric', 'Value']);
-            csvRows.push(['Agent Name', ev.agent_name || '']);
-            csvRows.push(['Overall Score', (ev.overall_score_percentage || 0) + '%']);
+            // Build CSV columns dynamically
+            let metricHeaders = ['Agent Name', 'Overall Score'];
+            let metricValues = [ev.agent_name || '', (ev.overall_score_percentage || 0) + '%'];
             
             const cats = ['communication_professionalism', 'technical_accuracy', 'process_adherence', 'customer_experience', 'efficiency_metrics'];
             cats.forEach(cat => {
                 if(ev[cat]) {
                     Object.entries(ev[cat]).forEach(([k, v]) => {
-                        csvRows.push([k, v]);
+                        metricHeaders.push(k.replace(/_/g, ' '));
+                        metricValues.push(v);
                     });
                 }
             });
-            csvRows.push([]);
-            csvRows.push(['Speaker', 'Text']);
-            if(currentSessionData.turns) {
-                currentSessionData.turns.forEach(t => {
-                    csvRows.push([t.speaker, `"${(t.text || '').replace(/"/g, '""')}"`]);
-                });
-            }
+            
+            let csvRows = [metricHeaders, metricValues];
             
             const csvContent = csvRows.map(e => e.join(",")).join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -345,67 +651,24 @@ Management`;
     // removed redeclaration of btnExportAgentPDF
     if(btnExportAgentPDF) {
         btnExportAgentPDF.addEventListener("click", () => {
-            if(!currentAgentName) return;
-            const element = document.getElementById('agentDetailsPane');
-            const listEl = document.getElementById('agentSessionsList');
-            const callAnalytics = document.getElementById('modalCallAnalyticsContainer');
-            const trendAnalytics = document.getElementById('modalTrendChartContainer');
-            const modalBody = callAnalytics ? callAnalytics.parentNode : null;
+            if(!currentAgentName || !currentAgentSessionsData) return;
             
-            // Temporarily remove overflow to capture full list
-            const origElementHeight = element.style.height;
-            const origListOverflow = listEl ? listEl.style.overflowY : "";
-            const origListFlex = listEl ? listEl.style.flex : "";
+            const agent = window.globalAgentsList?.find(a => a.agent_id === currentAgentId);
+            const element = populateAgentPDFTemplate(agent || { name: currentAgentName }, currentAgentSessionsData);
+            if (!element) return showToast("No agent data available.", true);
             
-            element.style.height = "auto";
-            if (listEl) {
-                listEl.style.overflowY = "visible";
-                listEl.style.flex = "none";
-            }
-            
-            // Temporary PDF container inside agentDetailsPane
-            const pdfGraphsContainer = document.createElement('div');
-            pdfGraphsContainer.style.marginTop = "20px";
-            pdfGraphsContainer.style.marginBottom = "20px";
-            
-            const origCallDisplay = callAnalytics ? callAnalytics.style.display : "";
-            const origTrendDisplay = trendAnalytics ? trendAnalytics.style.display : "";
-            
-            if (callAnalytics && trendAnalytics && modalBody) {
-                callAnalytics.style.display = "flex";
-                trendAnalytics.style.display = "block";
-                pdfGraphsContainer.appendChild(callAnalytics);
-                pdfGraphsContainer.appendChild(trendAnalytics);
-                if (listEl && listEl.parentNode) {
-                    listEl.parentNode.insertBefore(pdfGraphsContainer, listEl);
-                } else {
-                    element.appendChild(pdfGraphsContainer);
-                }
-            }
+            element.style.display = "block";
             
             const opt = {
               margin:       0.5,
               filename:     `AgentReport_${currentAgentName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
               image:        { type: 'jpeg', quality: 0.98 },
               html2canvas:  { scale: 2 },
-              jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
             
             html2pdf().set(opt).from(element).save().then(() => {
-                element.style.height = origElementHeight;
-                if (listEl) {
-                    listEl.style.overflowY = origListOverflow;
-                    listEl.style.flex = origListFlex;
-                }
-                if (callAnalytics && trendAnalytics && modalBody) {
-                    callAnalytics.style.display = origCallDisplay;
-                    trendAnalytics.style.display = origTrendDisplay;
-                    modalBody.appendChild(callAnalytics);
-                    modalBody.appendChild(trendAnalytics);
-                    if (pdfGraphsContainer.parentNode) {
-                        pdfGraphsContainer.parentNode.removeChild(pdfGraphsContainer);
-                    }
-                }
+                element.style.display = "none";
             });
         });
     }
@@ -465,7 +728,12 @@ Management`;
     if(btnCopyTranscript) {
         btnCopyTranscript.addEventListener("click", () => {
             if(currentSessionData && currentSessionData.turns) {
-                const textToCopy = currentSessionData.turns.map(t => `${t.speaker}: ${t.text}`).join("\n");
+                const ev = currentSessionData.stage5_evaluation?.transcript_evaluation || {};
+                const agentSpk = ev.agent_speaker_label || "SPEAKER_00";
+                const textToCopy = currentSessionData.turns.map(t => {
+                    const displayName = t.speaker === agentSpk ? 'Agent' : 'Customer';
+                    return `${displayName}: ${t.text}`;
+                }).join("\n");
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     const originalHTML = btnCopyTranscript.innerHTML;
                     btnCopyTranscript.innerHTML = '<i class="ms-Icon ms-Icon--CheckMark" style="color: #107c10;"></i>';
@@ -501,32 +769,36 @@ Management`;
     const analyticsModal = document.getElementById("analyticsModal");
     const analyticsModalClose = document.getElementById("analyticsModalClose");
     const btnTabCall = document.getElementById("btnTabCall");
-    const btnTabTrend = document.getElementById("btnTabTrend");
     
     const modalTabCall = document.getElementById("modalTabCall");
     const modalTabTrend = document.getElementById("modalTabTrend");
     const modalCallAnalyticsContainer = document.getElementById("modalCallAnalyticsContainer");
-    const modalTrendChartContainer = document.getElementById("modalTrendChartContainer");
+    const modalTrendContainer = document.getElementById("modalTrendContainer");
     
     function setModalTabActive(tabName) {
+        if (!modalTabCall || !modalCallAnalyticsContainer || !modalTabTrend || !modalTrendContainer) return;
+        
+        // Reset both
+        modalTabCall.classList.remove("active-tab");
+        modalTabTrend.classList.remove("active-tab");
+        modalTabCall.style.backgroundColor = "transparent";
+        modalTabCall.style.color = "var(--text-primary)";
+        modalTabTrend.style.backgroundColor = "transparent";
+        modalTabTrend.style.color = "var(--text-primary)";
+        
+        modalCallAnalyticsContainer.style.display = "none";
+        modalTrendContainer.style.display = "none";
+        
         if (tabName === 'call') {
             modalTabCall.classList.add("active-tab");
-            modalTabTrend.classList.remove("active-tab");
             modalCallAnalyticsContainer.style.display = "flex";
-            modalTrendChartContainer.style.display = "none";
             modalTabCall.style.backgroundColor = "var(--outlook-blue)";
             modalTabCall.style.color = "white";
-            modalTabTrend.style.backgroundColor = "white";
-            modalTabTrend.style.color = "var(--text-primary)";
-        } else {
+        } else if (tabName === 'trend') {
             modalTabTrend.classList.add("active-tab");
-            modalTabCall.classList.remove("active-tab");
-            modalCallAnalyticsContainer.style.display = "none";
-            modalTrendChartContainer.style.display = "block";
+            modalTrendContainer.style.display = "block";
             modalTabTrend.style.backgroundColor = "var(--outlook-blue)";
             modalTabTrend.style.color = "white";
-            modalTabCall.style.backgroundColor = "white";
-            modalTabCall.style.color = "var(--text-primary)";
         }
     }
     
@@ -534,21 +806,19 @@ Management`;
         analyticsModalClose.addEventListener("click", () => analyticsModal.classList.remove("open"));
     }
     
-    if (btnTabCall && btnTabTrend) {
+    if (btnTabCall) {
         btnTabCall.addEventListener("click", () => {
             if (currentAgentSessionsData) renderCharts(currentAgentSessionsData);
             setModalTabActive('call');
             analyticsModal.classList.add("open");
         });
-        
-        btnTabTrend.addEventListener("click", () => {
-            setModalTabActive('trend');
-            analyticsModal.classList.add("open");
-        });
     }
     
-    if (modalTabCall && modalTabTrend) {
+    if (modalTabCall) {
         modalTabCall.addEventListener("click", () => setModalTabActive('call'));
+    }
+    
+    if (modalTabTrend) {
         modalTabTrend.addEventListener("click", () => setModalTabActive('trend'));
     }
     
@@ -742,7 +1012,7 @@ async function loadAgents() {
         
         const renderAgentItem = (agent) => {
             const scoreDisplay = agent.total_calls === 0 ? "N/A" : `${agent.avg_score}%`;
-            const scoreClass = agent.total_calls === 0 ? 'mid' : (agent.avg_score >= 80 ? 'high' : (agent.avg_score >= 60 ? 'mid' : 'low'));
+            const badgeBg = getScoreBgColor(agent.avg_score, agent.total_calls === 0);
             
             return `
             <div class="session-item ${agent.is_deleted ? 'agent-deleted' : ''}" data-id="${agent.agent_id}" onclick="selectAgent('${agent.agent_id}', '${agent.agent_name.replace(/'/g, "\\'")}')" ${agent.is_deleted ? 'style="color: var(--accent-red); opacity: 0.6;"' : ''}>
@@ -754,7 +1024,7 @@ async function loadAgents() {
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                        <span class="score-badge ${scoreClass}">${scoreDisplay}</span>
+                        <span class="score-badge" style="background-color: ${badgeBg}; color: ${badgeBg === uiColors.na ? '#202124' : '#fff'};">${scoreDisplay}</span>
                         <button class="icon-btn delete-agent-btn" onclick="deleteAgent(event, '${agent.agent_id}')" title="Delete Agent" style="background: none; border: none; color: ${agent.is_deleted ? 'transparent' : 'var(--text-secondary)'}; cursor: ${agent.is_deleted ? 'default' : 'pointer'};">
                             <i class="ms-Icon ms-Icon--Delete" style="font-size: 17px;"></i>
                         </button>
@@ -933,11 +1203,11 @@ async function selectAgent(agentId, agentName) {
             const isPending = session.status === "pending";
             const ev = session.stage5_evaluation?.transcript_evaluation || {};
             let score = ev.overall_score_percentage || 0;
-            let tier = score >= 80 ? "high" : (score >= 60 ? "mid" : "low");
+            let badgeBg = getScoreBgColor(score, false);
             
             let badgeHtml = isPending 
                 ? `<button class="fluent-btn-primary" style="padding: 2px 8px; font-size: 14px; min-width: auto; height: 22px;" onclick="runPendingAnalysis(event, '${session.session_id}')">Analyze</button>`
-                : `<span class="score-badge ${tier}">${score.toFixed(1)}%</span>`;
+                : `<span class="score-badge" style="background-color: ${badgeBg}; color: #fff;">${score.toFixed(1)}%</span>`;
                 
             return `
                 <div class="session-item" data-id="${session.session_id}" onclick="selectSession('${session.session_id}')">
@@ -1005,40 +1275,80 @@ function renderSessionReport(session) {
         let score = ev.overall_score_percentage || 0;
         
         // Emotional Summary calculation for 6th box
-        const agentSpk = ev.agent_speaker_label || "";
         const sessionEmotionsRaw = session.stage5_evaluation?.speaker_emotions || {};
-        let sessionEmotionCounts = {};
-        if (agentSpk && sessionEmotionsRaw[agentSpk] && sessionEmotionsRaw[agentSpk].all_emotions && Object.keys(sessionEmotionsRaw[agentSpk].all_emotions).length > 0) {
-            sessionEmotionCounts = sessionEmotionsRaw[agentSpk].all_emotions;
-        } else {
-            Object.values(sessionEmotionsRaw).forEach(e => {
-                let em = (e.emotion || 'neutral').toLowerCase();
+        const score6 = document.getElementById("score6");
+        
+        let allEmotionsHtml = `<div style="display: flex; justify-content: space-between; gap: 10px;">`;
+        let emotionParamsHtml = '';
+        
+        Object.keys(sessionEmotionsRaw).forEach(spk => {
+            let sessionEmotionCounts = {};
+            if (sessionEmotionsRaw[spk].all_emotions && Object.keys(sessionEmotionsRaw[spk].all_emotions).length > 0) {
+                sessionEmotionCounts = sessionEmotionsRaw[spk].all_emotions;
+            } else {
+                let em = (sessionEmotionsRaw[spk].emotion || 'neutral').toLowerCase();
                 em = em.charAt(0).toUpperCase() + em.slice(1);
-                sessionEmotionCounts[em] = 100;
-            });
+                sessionEmotionCounts[em] = 10;
+            }
+            
+            const spkLabel = spk === (ev.agent_speaker_label || "Agent") ? "Agent" : "Customer";
+            let topEmo = Object.entries(sessionEmotionCounts).sort((a,b)=>b[1]-a[1])[0];
+            let topEmoStr = topEmo ? topEmo[0] : "Neutral";
+            let topEmoPct = topEmo ? topEmo[1] : 0;
+            
+            allEmotionsHtml += `
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">${spkLabel}</div>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text-primary);">${topEmoStr}</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 4px;">Score: ${topEmoPct * 10}%</div>
+                </div>
+            `;
+            
+            let sortedSessionEmotions = Object.entries(sessionEmotionCounts).sort((a,b) => b[1] - a[1]).slice(0, 4);
+            emotionParamsHtml += `<div style="font-weight: bold; margin-bottom: 10px; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">${spkLabel}</div>`;
+            if (sortedSessionEmotions.length === 0) {
+                emotionParamsHtml += `<p style="font-size: 16px; color: var(--text-muted); font-style: italic;">No emotion data available.</p>`;
+            } else {
+                sortedSessionEmotions.forEach(([emo, pct]) => {
+                    let capEmo = emo.charAt(0).toUpperCase() + emo.slice(1);
+                    emotionParamsHtml += `
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 6px;">
+                            <span style="color: var(--text-primary); font-weight: 500;">${capEmo}</span>
+                            <span style="font-weight: 700; color: var(--text-primary);">${pct * 10}%</span>
+                        </div>
+                    </div>`;
+                });
+            }
+        });
+        allEmotionsHtml += `</div>`;
+        
+        if (!allEmotionsHtml || Object.keys(sessionEmotionsRaw).length === 0) {
+            allEmotionsHtml = `
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-primary);">Neutral</div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">Score: 0%</div>
+            `;
+            emotionParamsHtml = `<p style="font-size: 16px; color: var(--text-muted); font-style: italic;">No emotion data available.</p>`;
         }
         
-        let emotionParamsHtml = '';
-        let sortedSessionEmotions = Object.entries(sessionEmotionCounts).sort((a,b) => b[1] - a[1]).slice(0, 4);
-        if (sortedSessionEmotions.length === 0) {
-            emotionParamsHtml = `<p style="font-size: 16px; color: var(--text-muted); font-style: italic;">No emotion data available.</p>`;
-        } else {
-            sortedSessionEmotions.forEach(([emo, pct]) => {
-                let capEmo = emo.charAt(0).toUpperCase() + emo.slice(1);
-                emotionParamsHtml += renderMetric(capEmo, pct, 100);
-            });
+        if(score6) {
+            score6.innerHTML = allEmotionsHtml;
         }
+        
         document.getElementById("qaOverallScore").textContent = score + "%";
         
-        sessionSenderName.textContent = ev.agent_name || "Agent";
-        senderAvatar.textContent = (ev.agent_name || "A").substring(0,2).toUpperCase();
+        sessionSenderName.textContent = "Scored by AI";
+        senderAvatar.textContent = "AI";
+        if(sessionDetailsMeta) {
+            sessionDetailsMeta.textContent = `Agent: ${ev.agent_name || "Agent"} | Completed`;
+        }
 
         function renderMetric(label, value, max) {
             let valNum = (value !== undefined && value !== 'N/A' && value !== null && value !== -1) ? parseInt(value) : -1;
             let displayVal = valNum >= 0 ? `${valNum}/${max}` : 'N/A';
             let pct = valNum >= 0 ? (valNum / max) * 100 : 0;
-            let color = pct >= 80 ? 'var(--excel-green)' : (pct >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
-            if (valNum < 0) color = 'var(--text-muted)';
+            let color = valNum < 0 ? 'var(--text-muted)' : 'var(--text-primary)';
+            let barColor = getScoreBgColor(pct, valNum < 0);
             
             return `
                 <div style="margin-bottom: 12px;">
@@ -1047,7 +1357,7 @@ function renderSessionReport(session) {
                         <span style="font-weight: 700; color: ${color};">${displayVal}</span>
                     </div>
                     <div style="height: 6px; background-color: rgba(128, 128, 128, 0.2); border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);">
-                        <div style="height: 100%; width: ${valNum >= 0 ? pct : 0}%; background: linear-gradient(90deg, ${color}, ${color}dd); border-radius: 4px; transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);"></div>
+                        <div style="height: 100%; width: ${valNum >= 0 ? pct : 0}%; background: ${barColor}; border-radius: 4px; transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);"></div>
                     </div>
                 </div>
             `;
@@ -1180,10 +1490,14 @@ function renderSessionReport(session) {
     
     const transcriptContainer = document.getElementById("transcriptContentContainer");
     if(transcriptContainer && session.turns) {
+        const ev = session.stage5_evaluation?.transcript_evaluation || {};
+        const agentSpk = ev.agent_speaker_label || "SPEAKER_00";
         transcriptContainer.innerHTML = session.turns.map(t => {
-            const color = t.speaker.includes('00') ? 'var(--outlook-blue)' : 'var(--text-primary)';
+            const isAgent = t.speaker === agentSpk;
+            const color = isAgent ? 'var(--outlook-blue)' : 'var(--text-primary)';
+            const displayName = isAgent ? 'Agent' : 'Customer';
             return `<div style="margin-bottom: 12px;">
-                <strong style="color: ${color};">${t.speaker}:</strong> 
+                <strong style="color: ${color};">${displayName}:</strong> 
                 <span style="color: var(--text-primary);">${t.text}</span>
             </div>`;
         }).join('');
@@ -1192,11 +1506,11 @@ function renderSessionReport(session) {
         const btnToggleTranscript = document.getElementById("btnToggleTranscript");
         const btnCopyTranscript = document.getElementById("btnCopyTranscript");
         if(btnToggleTranscript) {
-            btnToggleTranscript.textContent = "Show Transcript";
-            transcriptContainer.style.display = "none";
+            btnToggleTranscript.textContent = "Hide Transcript";
+            transcriptContainer.style.display = "block";
         }
         if(btnCopyTranscript) {
-            btnCopyTranscript.style.display = "none";
+            btnCopyTranscript.style.display = "inline-block";
         }
     } else if(transcriptContainer) {
         transcriptContainer.innerHTML = '<div style="color: var(--text-secondary); text-align: center;">No transcript available for this session.</div>';
@@ -1209,6 +1523,8 @@ function renderSessionReport(session) {
 let qaRadarChartInstance = null;
 let emotionPolarChartInstance = null;
 let trendLineChartInstance = null;
+let performanceDistributionChartInstance = null;
+let topImprovementAreasChartInstance = null;
 
 function renderTrendChart(sessions) {
     const container = document.getElementById('trendChartContainer');
@@ -1216,38 +1532,8 @@ function renderTrendChart(sessions) {
     
     // Filter out pending sessions and sort by date ascending (assuming older sessions are at the end, let's reverse them or sort by ID/date)
     const completedSessions = sessions.filter(s => s.status !== "pending").reverse();
-    const btnTabTrend = document.getElementById("btnTabTrend");
     const emptyState = document.getElementById("trendChartEmptyState");
     const canvas = document.getElementById("trendLineChart");
-    
-    if (btnTabTrend) {
-        btnTabTrend.style.display = "flex";
-        let days = 7;
-        const filterVal = document.getElementById("agentDateFilter")?.value;
-        if (filterVal === "custom") {
-            const sd = document.getElementById("customStartDate")?.value;
-            const ed = document.getElementById("customEndDate")?.value;
-            if (sd && ed) {
-                days = (new Date(ed) - new Date(sd)) / (1000 * 60 * 60 * 24) + 1;
-            } else {
-                days = 0;
-            }
-        } else {
-            days = parseInt(filterVal || "7");
-        }
-        
-        if (days < 7) {
-            btnTabTrend.disabled = true;
-            btnTabTrend.style.opacity = "0.5";
-            btnTabTrend.style.cursor = "not-allowed";
-            btnTabTrend.title = "Trend analysis requires at least 7 days of data.";
-        } else {
-            btnTabTrend.disabled = false;
-            btnTabTrend.style.opacity = "1";
-            btnTabTrend.style.cursor = "pointer";
-            btnTabTrend.title = "";
-        }
-    }
     
     if (completedSessions.length === 0) {
         if (emptyState) emptyState.style.display = "flex";
@@ -1323,9 +1609,54 @@ function renderCharts(sessions) {
     let commTotal = 0, techTotal = 0, procTotal = 0, custTotal = 0, effTotal = 0;
     let emotionCounts = { 'Neutral': 0, 'Frustrated': 0, 'Happy': 0, 'Sad': 0, 'Angry': 0 };
     
+    // Data structures for new charts
+    let distributionCounts = { excellent: 0, good: 0, needsImprovement: 0 };
+    let subMetricTotals = {};
+    let subMetricCounts = {};
+    
+    const addSubMetric = (metric, maxScore, actualScore) => {
+        if (actualScore === undefined || actualScore === null) return;
+        const key = metric.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        if (!subMetricTotals[key]) {
+            subMetricTotals[key] = 0;
+            subMetricCounts[key] = 0;
+        }
+        subMetricTotals[key] += (actualScore / maxScore) * 100;
+        subMetricCounts[key]++;
+    };
+    
     completedSessions.forEach(session => {
         const ev = session.stage5_evaluation?.transcript_evaluation;
         if (!ev) return;
+
+        // Score Distribution
+        const overall = ev.overall_score_percentage || 0;
+        if (overall >= 90) distributionCounts.excellent++;
+        else if (overall >= 75) distributionCounts.good++;
+        else distributionCounts.needsImprovement++;
+        
+        // Track individual sub-metrics
+        addSubMetric('greeting_verification', 5, ev.communication_professionalism?.greeting_verification);
+        addSubMetric('active_listening_empathy', 5, ev.communication_professionalism?.active_listening_empathy);
+        addSubMetric('probing_issue', 5, ev.communication_professionalism?.probing_issue);
+        addSubMetric('validating_priority', 5, ev.communication_professionalism?.validating_priority);
+        
+        addSubMetric('accurate_troubleshooting', 10, ev.technical_accuracy?.accurate_troubleshooting);
+        addSubMetric('solution_accuracy', 10, ev.technical_accuracy?.solution_accuracy);
+        addSubMetric('valid_escalation', 5, ev.technical_accuracy?.valid_escalation);
+        addSubMetric('use_of_knowledge_base', 5, ev.technical_accuracy?.use_of_knowledge_base);
+        
+        addSubMetric('critical_compliance', 5, ev.process_adherence?.critical_compliance);
+        addSubMetric('ticket_documentation', 10, ev.process_adherence?.ticket_documentation);
+        addSubMetric('time_entry_agreement', 5, ev.process_adherence?.time_entry_agreement);
+        
+        addSubMetric('incident_ownership', 5, ev.customer_experience?.incident_ownership);
+        addSubMetric('stakeholder_communication', 10, ev.customer_experience?.stakeholder_communication);
+        addSubMetric('proper_closing_satisfaction', 5, ev.customer_experience?.proper_closing_satisfaction);
+        
+        addSubMetric('first_call_resolution', 5, ev.efficiency_metrics?.first_call_resolution);
+        addSubMetric('thirty_minute_rule', 3, ev.efficiency_metrics?.thirty_minute_rule);
+        addSubMetric('minimal_transfers_holds', 2, ev.efficiency_metrics?.minimal_transfers_holds);
 
         commTotal += ((ev.communication_professionalism?.greeting_verification || 0) +
                       (ev.communication_professionalism?.active_listening_empathy || 0) +
@@ -1386,6 +1717,18 @@ function renderCharts(sessions) {
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
             pointHoverBorderColor: 'rgba(0, 120, 212, 1)',
+            borderWidth: 2,
+            fill: true
+        }, {
+            label: 'Target Benchmark (85%)',
+            data: [85, 85, 85, 85, 85],
+            backgroundColor: 'rgba(255, 159, 64, 0.1)',
+            borderColor: 'rgba(255, 159, 64, 0.8)',
+            borderDash: [5, 5],
+            pointBackgroundColor: 'rgba(255, 159, 64, 0.8)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(255, 159, 64, 0.8)',
             borderWidth: 2,
             fill: true
         }]
@@ -1504,6 +1847,83 @@ function renderCharts(sessions) {
             }
         }
     });
+
+    // Render Distribution Doughnut
+    if (performanceDistributionChartInstance) performanceDistributionChartInstance.destroy();
+    const distCtx = document.getElementById('performanceDistributionChart');
+    if (distCtx) {
+        const totalDist = distributionCounts.excellent + distributionCounts.good + distributionCounts.needsImprovement;
+        if (totalDist > 0) {
+            performanceDistributionChartInstance = new Chart(distCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Excellent (90%+)', 'Good (75-89%)', 'Needs Improvement (<75%)'],
+                    datasets: [{
+                        data: [distributionCounts.excellent, distributionCounts.good, distributionCounts.needsImprovement],
+                        backgroundColor: [uiColors.excellent, uiColors.good, uiColors.needsImprovement],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Outfit', size: 13 } } }
+                    }
+                }
+            });
+        }
+    }
+
+    // Render Areas for Improvement Bar Chart
+    if (topImprovementAreasChartInstance) topImprovementAreasChartInstance.destroy();
+    const impCtx = document.getElementById('topImprovementAreasChart');
+    if (impCtx) {
+        let subMetricAverages = [];
+        Object.keys(subMetricTotals).forEach(key => {
+            if (subMetricCounts[key] > 0) {
+                subMetricAverages.push({
+                    name: key,
+                    avg: subMetricTotals[key] / subMetricCounts[key]
+                });
+            }
+        });
+        
+        subMetricAverages.sort((a, b) => a.avg - b.avg);
+        const bottom5 = subMetricAverages.slice(0, 5);
+        
+        if (bottom5.length > 0) {
+            topImprovementAreasChartInstance = new Chart(impCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: bottom5.map(m => m.name),
+                    datasets: [{
+                        label: 'Avg Score %',
+                        data: bottom5.map(m => m.avg),
+                        backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { min: 0, max: 100, ticks: { font: { family: 'Outfit' } } },
+                        y: { ticks: { font: { family: 'Outfit', size: 11 } } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return `Score: ${context.raw.toFixed(1)}%`; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
 }
 
 // Upload & Poll Logic
@@ -1545,6 +1965,10 @@ async function startAnalysis() {
                 progressBarFill.style.width = "100%";
                 pollSessionStatus(data.session_id, file.name);
                 await new Promise(r => setTimeout(r, 1000));
+            } else if (res.status === 409) {
+                const errData = await res.json();
+                alert(`Duplicate Upload: ${errData.message}`);
+                progressPanel.classList.remove("open");
             } else {
                 alert(`Analysis failed to start for ${file.name}.`);
             }
@@ -1639,13 +2063,24 @@ function updateProgressBar(msg, pct) {
 }
 
 async function deleteCurrentSession() {
-    if (!currentSessionId) return;
-    if (confirm("Delete this session?")) {
-        await fetch(`/api/sessions/${currentSessionId}`, { method: "DELETE" });
-        readingPaneContent.classList.add("hidden");
-        emptyState.classList.remove("hidden");
-        if (currentAgentId) selectAgent(currentAgentId, currentAgentName); // reload current agent's sessions
-    }
+    if (!currentSessionId) return showToast("No session selected.", true);
+    
+    showConfirm("Delete this session?", async () => {
+        try {
+            const res = await fetch(`/api/sessions/${currentSessionId}`, { method: 'DELETE' });
+            if (res.ok) {
+                showToast("Session deleted.");
+                document.getElementById('readingPaneContent').style.display = 'none';
+                currentSessionId = null;
+                currentSessionData = null;
+                fetchSessions();
+            } else {
+                showToast("Failed to delete.", true);
+            }
+        } catch (err) {
+            showToast(err.message, true);
+        }
+    });
 }
 
 async function submitNewAgent() {
@@ -1792,12 +2227,17 @@ makeDraggable('unifiedUploadModal');
 
 window.deleteAgent = async function(event, agentId) {
     event.stopPropagation();
-    if(confirm("Are you sure you want to mark this agent as deleted? This will disable audio uploads for them.")) {
+    showConfirm("Are you sure you want to mark this agent as deleted? This will disable audio uploads for them.", async () => {
         try {
-            await fetch(`/api/agents/${encodeURIComponent(agentId)}`, { method: "DELETE" });
-            loadAgents();
+            const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}`, { method: "DELETE" });
+            if (res.ok) {
+                showToast("Agent deleted.");
+                loadAgents();
+            } else {
+                showToast("Failed to delete agent.", true);
+            }
         } catch(e) {
-            alert("Failed to delete agent.");
+            showToast("Failed to delete agent.", true);
         }
-    }
+    });
 };

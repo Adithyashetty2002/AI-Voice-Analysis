@@ -140,7 +140,7 @@ Transcript:
         base64_audio = encode_audio_base64(master_audio_path)
         
     try:
-        if base64_audio:
+        if False: # Disable audio model to force gpt-4o-mini json_object output
             messages = [
                 {"role": "user", "content": [
                     {"type": "text", "text": f"{sys_prompt}\n\n{user_prompt}"},
@@ -164,7 +164,7 @@ Transcript:
                 logger.warning(f"Audio model failed ({audio_err}), falling back to text-only.")
                 base64_audio = "" # Force text-only fallback below
                 
-        if not base64_audio:
+        if True: # Force text-only gpt-4o-mini always
             messages = [
                 {"role": "system", "content": sys_prompt},
                 {"role": "user", "content": user_prompt}
@@ -178,9 +178,22 @@ Transcript:
             
         content = r1.choices[0].message.content
         content = content.replace("```json", "").replace("```", "").strip()
-        results["transcript_evaluation"] = json.loads(content)
+        transcript_eval = json.loads(content)
+        
+        if "speaker_emotions" in transcript_eval:
+            results["speaker_emotions"] = transcript_eval["speaker_emotions"]
+            for spk, data in results["speaker_emotions"].items():
+                if "all_emotions" in data:
+                    all_emotions = data["all_emotions"]
+                    if all_emotions:
+                        primary = max(all_emotions, key=all_emotions.get)
+                        data["emotion"] = primary
+                        data["confidence"] = 100
+                        data["frustration"] = all_emotions.get("Frustration", 0)
+        
+        results["transcript_evaluation"] = transcript_eval
     except Exception as e:
-        logger.error(f"Evaluation Prompt failed: {e}")
+        logger.error(f"Failed to generate scorecard evaluation: {e}")
             
     return results
 

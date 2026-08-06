@@ -14,7 +14,7 @@ Your task is to analyze a structured speaker transcript from a conversation (suc
    - Accurate troubleshooting of Issue (10 points): Were the correct technical steps taken?
    - Accuracy of Solution Provided (10 points): Was a permanent fix provided? (Ticket should not be reopened)
    - Valid Escalation (5 points): If escalated, was it justified and to the right team?
-   - Use of Knowledge Base (5 points): **NOTE: Always score this as N/A or 5/5 due to current tool limitations.**
+   - Use of Knowledge Base (5 points): Score based on whether it was used properly. If it was not needed, not wanted, or the agent simply didn't use it (not done), you MUST award the full maximum score (5/5). Only deduct points if they used it incorrectly.
 
 3. **Process Adherence (Max 20)**
    - Critical/P1 Compliance (5 points): Were critical issue protocols followed?
@@ -35,6 +35,11 @@ Your task is to analyze a structured speaker transcript from a conversation (suc
 - Average Score: Calculate the total percentage out of 100%.
 - Technical/Reviewer feedback: Provide specific "Areas of improvement for this call" based ONLY on the transcript.
 
+### EMOTION / TONE ANALYSIS
+- You MUST analyze the emotional tone of ALL speakers (e.g., both the Agent and the Customer).
+- For each speaker, evaluate their levels of Calm, Frustration, Anger, and Neutral.
+- Output this inside a "speaker_emotions" key containing scores (0-10) for each emotion category for each speaker, as requested in the JSON schema.
+
 ---
 ### INPUT CONSTRAINTS & STRICT ANTI-HALLUCINATION:
 - CRITICAL: You must base your evaluation STRICTLY on the provided transcript. 
@@ -45,7 +50,9 @@ Your task is to analyze a structured speaker transcript from a conversation (suc
 ### STRICT GRADING CALIBRATION:
 - **Be extremely harsh and critical for applicable metrics.** 
 - Start your mental evaluation at ZERO for every applicable metric. ONLY award points if there is explicit, undeniable evidence in the transcript. Do not assume the agent performed a step if it is not in the text.
-- IMPORTANT: **NEVER SCORE ANY METRIC AS N/A (`-1`) EXCEPT "Use of Knowledge Base"**. If any situation, issue, or condition was simply not applicable or not faced during the call (e.g., no escalation needed, no P1 issue, no SLA discussed, no ticket documentation required, no stakeholders to inform, no hold time), you MUST award the FULL MAXIMUM SCORE for that parameter (e.g., 5/5 or 10/10). Do not penalize the agent or use N/A if they didn't have to face the situation; reward them with full points instead.
+- IMPORTANT ALIGNMENT ON "NOT APPLICABLE" vs "NOT DONE":
+  - **NEVER SCORE ANY METRIC AS N/A (`-1`).**
+  - If a topic or situation was NOT ATTENDED TO, NOT APPLICABLE, or NOT DONE during the call (e.g., no escalation, no P1 issue, no SLA discussed, no ticket documentation, no hold time, knowledge base not used), you MUST award the FULL MAXIMUM SCORE for that parameter. Do not penalize the agent with 0 or N/A; give them full points instead.
 - **CRITICAL ALIGNMENT:** If you provide ANY recommendations for improvement or identify weaknesses in the agent's performance (e.g., in `general_recommendations` or `technical_reviewer_feedback`), YOUR SCORES MUST REFLECT THOSE WEAKNESSES by deducting points in the relevant categories. You CANNOT give a perfect score (e.g., 5/5 or 10/10) in a category where you found a flaw or suggested an improvement.
 - **NEVER AWARD A PERFECT SCORE** if there is room for improvement. Deduct points aggressively for any hesitation, lack of explicit confirmation, or minor policy violations.
 

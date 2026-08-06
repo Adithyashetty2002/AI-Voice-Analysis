@@ -49,3 +49,10 @@ secrets.json
 credentials.json
 *.pem
 *.key
+
+# Application Data & Media
+node_modules/
+data/
+static/audio/
+*.wav
+*.pyc

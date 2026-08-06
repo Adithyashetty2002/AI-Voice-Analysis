@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Outlook Voice Analytics - AI Speaker Scoring Dashboard</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png" />
     <link rel="stylesheet" href="/static/styles.css?v=15">
     <!-- Google Fonts for premium modern typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,15 +108,9 @@
 
                     <!-- NEW Analytics Section -->
                     <div id="middlePanelAnalytics" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
-                            <h3 style="font-size: 17px; margin: 0; color: var(--text-primary);">Analytics</h3>
-                            <div class="analytics-tabs" style="display: flex; gap: 8px; width: 100%;">
-                                <button id="btnTabCall" class="fluent-btn-primary" style="flex: 1; padding: 8px; justify-content: center; height: auto;">Call</button>
-                                <button id="btnTabTrend" class="fluent-btn-primary" style="flex: 1; padding: 8px; justify-content: center; height: auto;">Trend</button>
-                            </div>
+                        <div class="analytics-tabs" style="display: flex; gap: 8px; width: 100%;">
+                            <button id="btnTabCall" class="fluent-btn-primary" style="flex: 1; padding: 6px; justify-content: center; height: auto; font-size: 13px;">Detailed Analytics</button>
                         </div>
-                        
-                        <div id="middlePanelGraphs" style="display: none;"></div>
                     </div>
                 </div>
                 
@@ -145,8 +140,8 @@
                         <button class="toolbar-btn mobile-back-btn" id="btnMobileBack" title="Back to Sessions">
                             <i class="ms-Icon ms-Icon--Back" aria-hidden="true"></i> Back
                         </button>
-                        <span class="category-badge" id="sessionSpeakersCount">2 Speakers</span>
-                        <span class="category-badge" id="sessionDuration">00:00</span>
+                        <span class="category-badge" id="sessionSpeakersCount" style="display: none;">2 Speakers</span>
+                        <span class="category-badge" id="sessionDuration" style="display: none;">00:00</span>
                     </div>
                     <div class="toolbar-right">
                         <button class="toolbar-btn" id="btnExportSessionPDF" title="Export Scorecard (PDF)">
@@ -214,10 +209,10 @@
                                 </div>
                                 <div style="display: flex; gap: 8px;">
                                     <button class="toolbar-btn" id="btnCopyTranscript" style="display: none;" title="Copy Transcript"><i class="ms-Icon ms-Icon--Copy"></i></button>
-                                    <button class="toolbar-btn" id="btnToggleTranscript">Show Transcript</button>
+                                    <button class="toolbar-btn" id="btnToggleTranscript">Hide Transcript</button>
                                 </div>
                             </div>
-                            <div id="transcriptContentContainer" style="display: none; max-height: 400px; overflow-y: auto; font-size: 17px; line-height: 1.6; padding: 10px; background: #faf9f8; border-radius: 6px;">
+                            <div id="transcriptContentContainer" style="display: block; max-height: 400px; overflow-y: auto; font-size: 17px; line-height: 1.6; padding: 10px; background: #faf9f8; border-radius: 6px;">
                             </div>
                         </div>
                     </div>
@@ -274,7 +269,7 @@
             
             <div class="analytics-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                 <button id="modalTabCall" class="fluent-btn-secondary active-tab" style="padding: 6px 12px; font-size: 16px;">Call Analytics</button>
-                <button id="modalTabTrend" class="fluent-btn-secondary" style="padding: 6px 12px; font-size: 16px;">Trend Analysis</button>
+                <button id="modalTabTrend" class="fluent-btn-secondary" style="padding: 6px 12px; font-size: 16px;">Trend</button>
             </div>
             
             <div id="modalCallAnalyticsContainer" style="display: flex; gap: 20px; flex-wrap: wrap; min-height: 400px; box-sizing: border-box;">
@@ -290,11 +285,24 @@
                         <canvas id="emotionPolarChart"></canvas>
                     </div>
                 </div>
+                
+                <div style="flex: 1; min-width: 300px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                    <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Score Distribution</h3>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="performanceDistributionChart"></canvas>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 300px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                    <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Areas for Improvement</h3>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="topImprovementAreasChart"></canvas>
+                    </div>
+                </div>
             </div>
             
-            <div id="modalTrendChartContainer" style="display: none; width: 100%; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea; min-height: 400px; box-sizing: border-box;">
-                <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Score Trend</h3>
-                <div id="trendChartEmptyState" style="display: none; height: 300px; align-items: center; justify-content: center; color: var(--text-secondary); font-style: italic; font-size: 17px;">
+            <div id="modalTrendContainer" style="display: none; height: 400px; width: 100%; box-sizing: border-box; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Performance Trend</h3>
+                <div id="trendChartEmptyState" style="display: none; height: 100%; align-items: center; justify-content: center; color: var(--text-secondary); font-style: italic; font-size: 14px;">
                     No data available for trend analysis.
                 </div>
                 <div style="position: relative; height: 300px; width: 100%;">
@@ -369,6 +377,58 @@
         </div>
     </div>
 
+    <!-- Email Compose Modal -->
+    <div class="fluent-modal" id="emailComposeModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Compose Email</h2>
+                <i class="ms-Icon ms-Icon--Cancel" id="emailComposeModalClose" aria-hidden="true"></i>
+            </div>
+            <div style="padding-top: 10px;">
+                <form id="emailComposeForm">
+                    <div class="form-group">
+                        <label>To</label>
+                        <input type="email" id="emailComposeTo" class="fluent-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="emailComposeSubject" class="fluent-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Body</label>
+                        <textarea id="emailComposeBody" class="fluent-input" rows="8" required style="resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group" style="background: #f3f2f1; padding: 10px; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                        <i class="ms-Icon ms-Icon--PDF" aria-hidden="true" style="color: #d83b01; font-size: 20px;"></i>
+                        <span style="font-size: 14px; font-weight: 600;">Attachment: Report.pdf (Auto-generated)</span>
+                    </div>
+                    <button type="submit" id="btnSendEmailSubmit" class="fluent-btn-primary full-width" style="margin-top: 15px;">
+                        <i class="ms-Icon ms-Icon--Send" aria-hidden="true"></i> Send Email
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div class="fluent-modal" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px; padding: 24px;">
+            <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+                <h2 style="font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                    <i class="ms-Icon ms-Icon--Warning" aria-hidden="true" style="color: #d83b01;"></i>
+                    Confirmation
+                </h2>
+            </div>
+            <div style="padding: 16px 0; font-size: 16px; color: var(--text-primary);" id="confirmModalMessage">
+                Are you sure?
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                <button type="button" class="fluent-btn-primary" id="btnConfirmCancel" style="background: white; color: var(--text-primary); border: 1px solid #8a8886;">Cancel</button>
+                <button type="button" class="fluent-btn-primary" id="btnConfirmProceed" style="background: #d83b01; border-color: #d83b01;">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Processing / Analysis Overlay Panel -->
     <div class="progress-panel" id="progressPanel">
         <div class="progress-card">
@@ -390,6 +450,116 @@
     <!-- Hidden global audio element for playing speaker turns -->
     <audio id="speakerAudioPlayer" class="hidden"></audio>
 
-    <script src="/static/app.js?v=19"></script>
+    <!-- Global Toast Notification -->
+    <div id="toastNotification" style="visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 9999; left: 50%; bottom: 30px; font-size: 17px; transform: translateX(-50%); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: visibility 0s, opacity 0.5s linear; opacity: 0;"></div>
+
+    <!-- Hidden PDF Export Template -->
+    <div id="pdfExportTemplate" style="display: none; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #333; background: #fff; line-height: 1.6; width: 680px; margin: 0 auto; box-sizing: border-box;">
+        <div style="border-bottom: 2px solid #0078d4; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1 style="color: #0078d4; margin: 0; font-size: 28px;">Quality Assurance Scorecard</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;" id="pdfSessionDate"></p>
+        </div>
+        
+        <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse; table-layout: fixed; word-wrap: break-word;">
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold; width: 25%;">Agent Name</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentName"></td>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold; width: 25%;">Overall Score</td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; font-size: 18px; color: #107c41;" id="pdfOverallScore"></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold;">Topic</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfSessionTopic" colspan="3"></td>
+            </tr>
+        </table>
+
+        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Category Breakdown</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
+            <tr style="background: #f3f2f1;">
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Category</th>
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">Professionalism</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatProf"></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">Technical Accuracy</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatTech"></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">Process Adherence</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatProc"></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">Customer Experience</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatExp"></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">Efficiency Metrics</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatEff"></td>
+            </tr>
+        </table>
+
+        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Emotion Analysis</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
+            <tr style="background: #f3f2f1;">
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Emotion</th>
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Percentage</th>
+            </tr>
+            <tbody id="pdfEmotionList">
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-style: italic; color: #666;" colspan="2">No emotion data available</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px;">Reviewer Feedback</h2>
+        <div style="padding: 15px; background: #faf9f8; border-left: 4px solid #0078d4; border-radius: 4px; margin-bottom: 20px; page-break-inside: avoid;">
+            <p style="margin: 0; white-space: pre-wrap;" id="pdfReviewerFeedback"></p>
+        </div>
+
+        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; page-break-before: always;">Call Transcript</h2>
+        <div style="padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-bottom: 20px;" id="pdfTranscriptContainer">
+        </div>
+    </div>
+
+    <!-- Hidden Agent PDF Export Template -->
+    <div id="pdfAgentExportTemplate" style="display: none; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #333; background: #fff; line-height: 1.6; width: 680px; margin: 0 auto; box-sizing: border-box;">
+        <div style="border-bottom: 2px solid #0078d4; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1 style="color: #0078d4; margin: 0; font-size: 28px;">Agent Performance Report</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;" id="pdfAgentReportDate"></p>
+        </div>
+        
+        <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse; table-layout: fixed; word-wrap: break-word;">
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold; width: 25%;">Agent Name</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentReportName"></td>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold; width: 25%;">Average Score</td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; font-size: 18px; color: #107c41;" id="pdfAgentReportScore"></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold;">Total Calls</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentReportCalls"></td>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold;">Primary Emotion</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentReportEmotion"></td>
+            </tr>
+        </table>
+
+        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Recent Sessions</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
+            <thead>
+                <tr style="background: #f3f2f1;">
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Date</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Topic</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
+                </tr>
+            </thead>
+            <tbody id="pdfAgentReportSessionsList">
+            </tbody>
+        </table>
+    </div>
+
+    <script src="/static/app.js?v=23"></script>
 </body>
 </html>
