@@ -33,7 +33,7 @@ from typing import Dict, Any, Optional
 import hashlib
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from config import get_db, SessionLocal, COLOR_EXCELLENT, COLOR_GOOD, COLOR_NEEDS_IMPROVEMENT, COLOR_NA
+from config import get_db, SessionLocal, COLOR_EXCELLENT, COLOR_GOOD, COLOR_NEEDS_IMPROVEMENT, COLOR_NA, SCORE_THRESHOLD_EXCELLENT, SCORE_THRESHOLD_GOOD, TARGET_BENCHMARK
 import models
 from s3_storage import s3_client
 import xml.etree.ElementTree as ET
@@ -184,9 +184,13 @@ def run_analysis_task(session_id: str, temp_audio_path: str, topic: str, agent_n
                 recording.pipeline_status = "success"
                 recording.duration = result.get("metrics", {}).get("total_audio_duration_seconds")
                 
+                # Clean up existing records in case of a retry
+                db.query(models.Transcript).filter(models.Transcript.recording_uuid == session_id).delete()
+                db.query(models.Speaker).filter(models.Speaker.recording_uuid == session_id).delete()
+                db.query(models.AnalysisResult).filter(models.AnalysisResult.recording_uuid == session_id).delete()
+                
                 # Insert Speakers
-                speaker_stats = result.get("metrics", {}).get("speaker_statistics", {})
-                for spk_label in speaker_stats.keys():
+                for spk_label in list(set(t.get("speaker") for t in result.get("turns", []))):
                     speaker = models.Speaker(recording_uuid=session_id, speaker_label=spk_label, mapped_name="Unknown")
                     db.add(speaker)
                 
@@ -452,7 +456,12 @@ async def analyze_pending_endpoint(
     if not os.path.exists(temp_audio_path):
         success = s3_client.download_file(s3_key, temp_audio_path)
         if not success and not os.path.exists(temp_audio_path):
-            raise HTTPException(status_code=404, detail="Failed to retrieve audio file from S3 and it was not found locally.")
+            normalized_path = os.path.join(WORKSPACE_DIR, "static", "audio", session_id, "normalized_input.wav")
+            if os.path.exists(normalized_path):
+                import shutil
+                shutil.copy(normalized_path, temp_audio_path)
+            else:
+                raise HTTPException(status_code=404, detail="Failed to retrieve audio file from S3 and it was not found locally.")
         
     recording.pipeline_status = "pending"
     db.commit()
@@ -481,28 +490,32 @@ async def analyze_audio_endpoint(
     if not file or not file.filename:
         raise HTTPException(status_code=400, detail="Invalid audio file.")
         
-    file_bytes = await file.read()
-    file_hash = hashlib.md5(file_bytes).hexdigest()
-    
-    # Check deduplication
-    existing_audit = db.query(models.UploadAudit).filter(models.UploadAudit.md5_checksum == file_hash).first()
-    if existing_audit:
-        return JSONResponse(status_code=409, content={"status": "error", "message": "This file has already been uploaded."})
-        
     session_id = str(uuid.uuid4())
     logger.info(f"Received audio analysis upload. Session: {session_id}, Topic: {topic}")
     
-    # Save uploaded file to local temp path
+    # Save uploaded file to local temp path in chunks to support very large files
     temp_dir = os.path.join(WORKSPACE_DIR, "data", "temp")
     os.makedirs(temp_dir, exist_ok=True)
     temp_audio_path = os.path.join(temp_dir, f"{session_id}_{file.filename}")
     
+    md5_hash = hashlib.md5()
     with open(temp_audio_path, "wb") as buffer:
-        buffer.write(file_bytes)
+        while chunk := await file.read(1024 * 1024):  # 1MB chunks
+            md5_hash.update(chunk)
+            buffer.write(chunk)
+            
+    file_hash = md5_hash.hexdigest()
+    
+    # Check deduplication
+    existing_audit = db.query(models.UploadAudit).filter(models.UploadAudit.md5_checksum == file_hash).first()
+    if existing_audit:
+        os.remove(temp_audio_path) # Cleanup temp file for duplicate
+        return JSONResponse(status_code=409, content={"status": "error", "message": "This file has already been uploaded."})
         
-    # Upload to S3
+    # Upload to S3 asynchronously to avoid blocking the event loop
+    import asyncio
     s3_object_name = f"uploads/{session_id}_{file.filename}"
-    s3_success = s3_client.upload_file(temp_audio_path, s3_object_name)
+    s3_success = await asyncio.to_thread(s3_client.upload_file, temp_audio_path, s3_object_name)
     if not s3_success:
         logger.warning(f"Failed to upload {file.filename} to S3, but continuing locally.")
         
@@ -571,7 +584,10 @@ async def get_ui_config():
         "colorExcellent": COLOR_EXCELLENT,
         "colorGood": COLOR_GOOD,
         "colorNeedsImprovement": COLOR_NEEDS_IMPROVEMENT,
-        "colorNA": COLOR_NA
+        "colorNA": COLOR_NA,
+        "scoreThresholdExcellent": SCORE_THRESHOLD_EXCELLENT,
+        "scoreThresholdGood": SCORE_THRESHOLD_GOOD,
+        "targetBenchmark": TARGET_BENCHMARK
     }
 
 @app.get("/api/status/{session_id}")
@@ -617,6 +633,35 @@ async def add_agent(agent_name: str = Form(...), agent_id: str = Form(None), loc
         is_duplicate = True
             
     return {"status": "success", "agent_id": final_id, "agent_name": agent_name, "is_duplicate": is_duplicate}
+
+@app.put("/api/agents/{agent_id}")
+async def edit_agent(agent_id: str, agent_name: str = Form(...), new_agent_id: str = Form(None), location: str = Form(None), department: str = Form(None)):
+    if not os.path.exists(AGENTS_DB_FILE):
+        raise HTTPException(status_code=404, detail="Agents database not found.")
+        
+    with open(AGENTS_DB_FILE, "r") as f:
+        agents = json.load(f)
+        
+    agent_found = False
+    for a in agents:
+        if a.get("agent_id") == agent_id:
+            agent_found = True
+            a["agent_name"] = agent_name
+            if new_agent_id and new_agent_id.strip():
+                a["agent_id"] = new_agent_id.strip()
+            if location:
+                a["location"] = location.strip()
+            if department:
+                a["department"] = department.strip()
+            break
+            
+    if not agent_found:
+        raise HTTPException(status_code=404, detail="Agent not found.")
+        
+    with open(AGENTS_DB_FILE, "w") as f:
+        json.dump(agents, f, indent=2)
+        
+    return {"status": "success"}
 
 @app.post("/api/agents/bulk")
 async def bulk_add_agents(file: UploadFile = File(...)):
@@ -697,93 +742,120 @@ async def delete_agent(agent_id: str):
         
     return {"status": "deleted"}
 
+@app.post("/api/agents/{agent_id}/restore")
+async def restore_agent(agent_id: str):
+    agents_list = []
+    if os.path.exists(AGENTS_DB_FILE):
+        with open(AGENTS_DB_FILE, "r") as f:
+            try:
+                agents_list = json.load(f)
+            except:
+                pass
+                
+    found = False
+    for a in agents_list:
+        if a.get("agent_id") == agent_id:
+            a["is_deleted"] = False
+            found = True
+            
+    if not found:
+        agents_list.append({
+            "agent_id": agent_id,
+            "agent_name": agent_id,
+            "is_deleted": False
+        })
+        
+    with open(AGENTS_DB_FILE, "w") as f:
+        json.dump(agents_list, f, indent=4)
+        
+    return {"status": "restored"}
+
 @app.get("/api/agents")
-async def list_agents():
+async def list_agents(db: Session = Depends(get_db)):
     """
-    Retrieves a list of aggregated agents and their overall metrics.
+    Retrieves the list of configured agents and computes aggregate scoring statistics.
     """
     agents = {}
-
-    # Load standalone agents from JSON
     if os.path.exists(AGENTS_DB_FILE):
         try:
             with open(AGENTS_DB_FILE, "r") as f:
-                standalone = json.load(f)
-                for sa in standalone:
-                    name = sa.get("agent_name", "Unknown Agent")
-                    aid = sa.get("agent_id") or name
-                    agents[aid] = {
-                        "agent_id": aid,
-                        "agent_name": name,
+                saved_agents = json.load(f)
+                for a in saved_agents:
+
+                    agents[a["agent_id"]] = {
+                        "agent_id": a["agent_id"],
+                        "agent_name": a["agent_name"],
+                        "location": a.get("location", ""),
+                        "department": a.get("department", ""),
                         "total_calls": 0,
                         "analyzed_calls": 0,
                         "sum_score": 0,
                         "emotion_counts": {},
-                        "is_deleted": sa.get("is_deleted", False)
+                        "is_deleted": a.get("is_deleted", False)
                     }
         except:
             pass
 
-    if not os.path.exists(SESSIONS_DB_DIR):
-        return list(agents.values())
-
-    for filename in os.listdir(SESSIONS_DB_DIR):
-        if filename.endswith(".json") and "_speaker_" not in filename and "_conversation" not in filename and "_diarization" not in filename:
-            filepath = os.path.join(SESSIONS_DB_DIR, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                
-                stage5 = data.get("stage5_evaluation", {})
-                transcript_eval = stage5.get("transcript_evaluation", {})
-                
-                agent_name = data.get("agent_name") or transcript_eval.get("agent_name", "Unknown Agent")
-                agent_id = data.get("agent_id") or agent_name
-
-                # Check for emotions from Smallest AI
-                emotions = stage5.get("speaker_emotions", {})
-                agent_speaker = transcript_eval.get("agent_speaker_label", "")
-
-                emotion_str = "Neutral"
-                if agent_speaker and agent_speaker in emotions:
-                    emotion_str = emotions[agent_speaker].get("emotion", "Neutral")
-                    
-                score = transcript_eval.get("overall_score_percentage", 0)
-                is_analyzed = data.get("status") == "success"
-                
-                if agent_id not in agents:
-                    agents[agent_id] = {
-                        "agent_id": agent_id,
-                        "agent_name": agent_name,
-                        "total_calls": 0,
-                        "analyzed_calls": 0,
-                        "sum_score": 0,
-                        "emotion_counts": {},
-                        "is_deleted": False
-                    }
-                    
-                agents[agent_id]["total_calls"] += 1
-                if is_analyzed:
-                    agents[agent_id]["analyzed_calls"] += 1
-                    agents[agent_id]["sum_score"] += score
-                    agents[agent_id]["emotion_counts"][emotion_str] = agents[agent_id]["emotion_counts"].get(emotion_str, 0) + 1
-                
-            except Exception as e:
-                logger.error(f"Error loading session file {filename}: {str(e)}")
-                
-    result = []
-    for id, stats in agents.items():
-        result.append({
-            "agent_id": stats["agent_id"],
-            "agent_name": stats["agent_name"],
-            "total_calls": stats["total_calls"],
-            "analyzed_calls": stats["analyzed_calls"],
-            "avg_score": round(stats["sum_score"] / stats["analyzed_calls"], 1) if stats["analyzed_calls"] > 0 else 0,
-            "emotion_counts": stats["emotion_counts"],
-            "is_deleted": stats.get("is_deleted", False)
-        })
+    recordings = db.query(models.Recording).all()
+    for recording in recordings:
+        agent_name = recording.agent_name or "Unknown Agent"
+        agent_id = recording.agent_id or agent_name
         
-    return result
+        is_analyzed = recording.pipeline_status == "success"
+        score = 0
+        emotion_str = "Neutral"
+        
+        if is_analyzed and recording.analysis_result and recording.analysis_result.raw_llm_output:
+            data = recording.analysis_result.raw_llm_output
+            stage5 = data.get("stage5_evaluation", {})
+            transcript_eval = stage5.get("transcript_evaluation", {})
+            
+            emotions = stage5.get("speaker_emotions", {})
+            agent_speaker = transcript_eval.get("agent_speaker_label", "")
+            if agent_speaker and agent_speaker in emotions:
+                emotion_str = emotions[agent_speaker].get("emotion", "Neutral")
+                
+            score = transcript_eval.get("overall_score_percentage", 0)
+            
+        # Merge logic: if agent_id not in agents, check if we have one with the same name
+        matched_id = agent_id
+        if agent_id not in agents:
+            for existing_id, existing_stats in agents.items():
+                if existing_stats["agent_name"].lower() == agent_name.lower():
+                    matched_id = existing_id
+                    break
+                    
+        if matched_id not in agents:
+            agents[matched_id] = {
+                "agent_id": matched_id,
+                "agent_name": agent_name,
+                "total_calls": 0,
+                "analyzed_calls": 0,
+                "sum_score": 0,
+                "emotion_counts": {},
+                "is_deleted": False
+            }
+            
+        agents[matched_id]["total_calls"] += 1
+        if is_analyzed:
+            agents[matched_id]["analyzed_calls"] += 1
+            agents[matched_id]["sum_score"] += score
+            agents[matched_id]["emotion_counts"][emotion_str] = agents[matched_id]["emotion_counts"].get(emotion_str, 0) + 1
+            
+    return [
+        {
+            "agent_id": a["agent_id"],
+            "agent_name": a["agent_name"],
+            "department": a.get("department", ""),
+            "location": a.get("location", ""),
+            "total_calls": a["total_calls"],
+            "analyzed_calls": a["analyzed_calls"],
+            "avg_score": round(a["sum_score"] / a["analyzed_calls"], 1) if a["analyzed_calls"] > 0 else 0,
+            "emotion_counts": a["emotion_counts"],
+            "is_deleted": a.get("is_deleted", False)
+        }
+        for a in agents.values()
+    ]
 
 @app.get("/api/agents/{agent_id}/sessions")
 async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | None = None, end_date: str | None = None, start_ts: float | None = None, end_ts: float | None = None, db: Session = Depends(get_db)):
@@ -806,8 +878,21 @@ async def list_agent_sessions(agent_id: str, days: int = 7, start_date: str | No
             
     sessions = []
     try:
+        target_name = agent_id
+        if os.path.exists(AGENTS_DB_FILE):
+            try:
+                with open(AGENTS_DB_FILE, "r") as f:
+                    for a in json.load(f):
+                        if a.get("agent_id") == agent_id:
+                            target_name = a.get("agent_name", agent_id)
+                            break
+            except:
+                pass
+                
         recordings = db.query(models.Recording).filter(
-            (models.Recording.agent_id == agent_id) | (models.Recording.agent_name == agent_id)
+            (models.Recording.agent_id == agent_id) | 
+            (models.Recording.agent_name == agent_id) |
+            (models.Recording.agent_name.ilike(target_name))
         ).all()
         
         for recording in recordings:
@@ -954,11 +1039,16 @@ async def send_email(
         part['Content-Disposition'] = f'attachment; filename="{pdf_file.filename}"'
         msg.attach(part)
         
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender, password)
-        server.send_message(msg)
-        server.quit()
+        import asyncio
+        def _send_sync():
+            server = smtplib.SMTP('smtp.gmail.com', 587, timeout=15)
+            server.starttls()
+            server.login(sender, password)
+            server.send_message(msg)
+            server.quit()
+            
+        await asyncio.to_thread(_send_sync)
+
         
         return {"status": "success", "message": "Email sent successfully!"}
     except Exception as e:

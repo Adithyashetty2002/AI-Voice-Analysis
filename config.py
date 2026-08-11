@@ -19,6 +19,11 @@ COLOR_EXCELLENT = os.getenv("COLOR_EXCELLENT", "#107c41")
 COLOR_GOOD = os.getenv("COLOR_GOOD", "#0078d4")
 COLOR_NEEDS_IMPROVEMENT = os.getenv("COLOR_NEEDS_IMPROVEMENT", "#d13438")
 COLOR_NA = os.getenv("COLOR_NA", "#ffb900")
+
+# --- UI Score Thresholds ---
+SCORE_THRESHOLD_EXCELLENT = float(os.getenv("SCORE_THRESHOLD_EXCELLENT", "90"))
+SCORE_THRESHOLD_GOOD = float(os.getenv("SCORE_THRESHOLD_GOOD", "75"))
+TARGET_BENCHMARK = float(os.getenv("TARGET_BENCHMARK", "85"))
 # --- PostgreSQL Configuration ---
 # You must set DATABASE_URL in your .env file, e.g., postgresql://user:password@localhost/dbname
 DATABASE_URL = os.getenv("DATABASE_URL")

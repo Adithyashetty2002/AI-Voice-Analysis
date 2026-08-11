@@ -793,6 +793,7 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease;
+    cursor: pointer;
 }
 
 .fluent-modal.open {
@@ -811,6 +812,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    cursor: default;
 }
 
 .modal-header {
@@ -1035,6 +1037,7 @@ body {
     #agentListPane, #agentDetailsPane, #recordingAnalysisPane {
         width: 100% !important;
         max-width: 100% !important;
+        min-width: 0 !important;
         height: 100vh;
         height: 100dvh;
         border-right: none;

@@ -27,8 +27,32 @@
     <_30_minute_rule>3</_30_minute_rule>
     <Minimal_Transfers_Hold_Time>2</Minimal_Transfers_Hold_Time>
   </Efficiency_Metrics>
-  <Overall_Score_Percentage>97</Overall_Score_Percentage>
-  <Technical_Reviewer_Feedback>The agent demonstrated strong communication and professionalism throughout the call. However, there was a slight lack of empathy when the customer expressed uncertainty about the cost, which could have been addressed with more reassurance. Overall, the agent effectively handled the inquiry and provided a clear solution.</Technical_Reviewer_Feedback>
+  <speaker_emotions>
+    <SPEAKER_00>
+      <all_emotions>
+        <Calm>8</Calm>
+        <Frustration>0</Frustration>
+        <Anger>0</Anger>
+        <Neutral>2</Neutral>
+      </all_emotions>
+      <emotion>Calm</emotion>
+      <confidence>100</confidence>
+      <frustration>0</frustration>
+    </SPEAKER_00>
+    <SPEAKER_01>
+      <all_emotions>
+        <Calm>6</Calm>
+        <Frustration>2</Frustration>
+        <Anger>0</Anger>
+        <Neutral>2</Neutral>
+      </all_emotions>
+      <emotion>Calm</emotion>
+      <confidence>100</confidence>
+      <frustration>2</frustration>
+    </SPEAKER_01>
+  </speaker_emotions>
+  <Overall_Score_Percentage>92</Overall_Score_Percentage>
+  <Technical_Reviewer_Feedback>The agent demonstrated strong communication and professionalism, effectively probing the issue and providing accurate information. However, there could have been more empathy shown when the customer expressed uncertainty about the cost. Additionally, while the agent provided a solution, they should ensure to confirm the customer's final decision before proceeding with the order.</Technical_Reviewer_Feedback>
   <agent_speaker_label>SPEAKER_00</agent_speaker_label>
-  <agent_name>Lauren</agent_name>
+  <agent_name>[private_person]</agent_name>
 </LLM_Output>

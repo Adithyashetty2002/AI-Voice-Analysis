@@ -13,6 +13,13 @@ let uiColors = {
     na: "#ffb900"
 };
 
+let scoreThresholds = {
+    excellent: 90,
+    good: 75
+};
+
+let targetBenchmark = 85;
+
 async function loadUiConfig() {
     try {
         const res = await fetch("/api/ui-config");
@@ -22,6 +29,9 @@ async function loadUiConfig() {
             uiColors.good = data.colorGood || uiColors.good;
             uiColors.needsImprovement = data.colorNeedsImprovement || uiColors.needsImprovement;
             uiColors.na = data.colorNA || uiColors.na;
+            scoreThresholds.excellent = data.scoreThresholdExcellent || scoreThresholds.excellent;
+            scoreThresholds.good = data.scoreThresholdGood || scoreThresholds.good;
+            targetBenchmark = data.targetBenchmark || targetBenchmark;
         }
     } catch (e) {
         console.error("Failed to load UI config:", e);
@@ -30,8 +40,8 @@ async function loadUiConfig() {
 
 function getScoreBgColor(score, isNa = false) {
     if (isNa) return uiColors.na;
-    if (score >= 90) return uiColors.excellent;
-    if (score >= 75) return uiColors.good;
+    if (score >= scoreThresholds.excellent) return uiColors.excellent;
+    if (score >= scoreThresholds.good) return uiColors.good;
     return uiColors.needsImprovement;
 }
 
@@ -126,8 +136,10 @@ function populatePDFTemplate(sessionData, agentName) {
     
     document.getElementById('pdfSessionDate').textContent = dateStr;
     document.getElementById('pdfAgentName').textContent = agentName || "Unknown Agent";
-    document.getElementById('pdfOverallScore').textContent = (ev.overall_score_percentage || 0) + '%';
-    document.getElementById('pdfSessionTopic').textContent = sessionData.topic || "N/A";
+    const overallScore = ev.overall_score_percentage || 0;
+    document.getElementById('pdfOverallScore').textContent = overallScore + '%';
+    document.getElementById('pdfOverallScore').style.color = getScoreBgColor(overallScore);
+    document.getElementById('pdfSessionTopic').textContent = sessionData.displayTitle || "Voice Session";
     
     const sumCat = (cat) => {
         if (!cat) return 0;
@@ -136,12 +148,52 @@ function populatePDFTemplate(sessionData, agentName) {
             return sum + (isNaN(num) || num < 0 ? 0 : num);
         }, 0);
     };
-    
-    document.getElementById('pdfCatProf').textContent = sumCat(ev.communication_professionalism) + '/20';
-    document.getElementById('pdfCatTech').textContent = sumCat(ev.technical_accuracy) + '/30';
-    document.getElementById('pdfCatProc').textContent = sumCat(ev.process_adherence) + '/20';
-    document.getElementById('pdfCatExp').textContent = sumCat(ev.customer_experience) + '/20';
-    document.getElementById('pdfCatEff').textContent = sumCat(ev.efficiency_metrics) + '/10';
+
+    // Build Category Breakdown
+    const categories = [
+        { key: 'communication_professionalism', title: 'Communication & Professionalism', max: 20 },
+        { key: 'technical_accuracy', title: 'Technical Accuracy', max: 30 },
+        { key: 'process_adherence', title: 'Process Adherence', max: 20 },
+        { key: 'customer_experience', title: 'Customer Experience', max: 20 },
+        { key: 'efficiency_metrics', title: 'Efficiency Metrics', max: 10 }
+    ];
+
+    let categoryHtml = '';
+    categories.forEach(cat => {
+        const catData = ev[cat.key];
+        const catScore = sumCat(catData);
+        
+        categoryHtml += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;">
+            <tr style="background: #f4f4f4;">
+                <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0; width: 80%; word-wrap: break-word;">${cat.title}</td>
+                <td style="padding: 12px; font-weight: bold; text-align: right; border-bottom: 1px solid #e0e0e0; width: 20%;">${catScore}/${cat.max}</td>
+            </tr>`;
+        
+        if (catData) {
+            Object.entries(catData).forEach(([metricKey, metricVal]) => {
+                const metricTitle = metricKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                let displayVal = metricVal;
+                let maxSub = 5;
+                if (cat.key === 'technical_accuracy' && (metricKey === 'accurate_troubleshooting' || metricKey === 'solution_accuracy') || metricKey === 'ticket_documentation' || metricKey === 'stakeholder_communication') {
+                    maxSub = 10;
+                }
+                if (cat.key === 'efficiency_metrics') {
+                    if (metricKey === 'thirty_minute_rule') maxSub = 3;
+                    if (metricKey === 'minimal_transfers_holds') maxSub = 2;
+                }
+                
+                if (metricVal < 0) displayVal = 'N/A';
+                else displayVal = `${metricVal}/${maxSub}`;
+
+                categoryHtml += `<tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; width: 80%; word-wrap: break-word;">${metricTitle}</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #eee; width: 20%;">${displayVal}</td>
+                </tr>`;
+            });
+        }
+        categoryHtml += `</table>`;
+    });
+    document.getElementById('pdfCategoryBreakdownContainer').innerHTML = categoryHtml;
     
     document.getElementById('pdfReviewerFeedback').textContent = ev.technical_reviewer_feedback || "No feedback provided.";
 
@@ -161,13 +213,13 @@ function populatePDFTemplate(sessionData, agentName) {
         if (Object.keys(sessionEmotionCounts).length > 0) {
             const sortedEmotions = Object.entries(sessionEmotionCounts).sort((a, b) => b[1] - a[1]);
             const spkLabel = spk === (ev.agent_speaker_label || "Agent") ? "Agent" : "Customer";
-            emotionRowsHtml += `<tr><td style="padding: 10px; border: 1px solid #ddd; background: #f9f9f9; font-weight: bold;" colspan="2">${spkLabel} (${spk})</td></tr>`;
+            emotionRowsHtml += `<tr><td style="padding: 12px; border: 1px solid #e0e0e0; background: #f9f9f9; font-weight: bold;" colspan="2">${spkLabel} (${spk})</td></tr>`;
             emotionRowsHtml += sortedEmotions.map(([emo, pct]) => {
                 const capEmo = emo.charAt(0).toUpperCase() + emo.slice(1);
                 return `
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #ddd; padding-left: 20px;">${capEmo}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${pct * 10}%</td>
+                        <td style="padding: 12px; border: 1px solid #e0e0e0; padding-left: 20px; width: 80%;">${capEmo}</td>
+                        <td style="padding: 12px; border: 1px solid #e0e0e0; text-align: center; width: 20%;">${Math.round(pct * 10)}%</td>
                     </tr>
                 `;
             }).join('');
@@ -177,22 +229,27 @@ function populatePDFTemplate(sessionData, agentName) {
     if (emotionRowsHtml) {
         emotionList.innerHTML = emotionRowsHtml;
     } else {
-        emotionList.innerHTML = `<tr><td style="padding: 10px; border: 1px solid #ddd; font-style: italic; color: #666;" colspan="2">No emotion data available</td></tr>`;
+        emotionList.innerHTML = `<tr><td style="padding: 12px; border: 1px solid #e0e0e0; font-style: italic; color: #666;" colspan="2">No emotion data available</td></tr>`;
     }
     
     const transcriptContainer = document.getElementById('pdfTranscriptContainer');
     if (sessionData.turns && sessionData.turns.length > 0) {
         const ev = sessionData.stage5_evaluation?.transcript_evaluation || {};
         const agentSpk = ev.agent_speaker_label || "SPEAKER_00";
-        transcriptContainer.innerHTML = sessionData.turns.map(t => {
+        
+        let htmlContent = sessionData.turns.map(t => {
             const isAgent = t.speaker === agentSpk;
-            const color = isAgent ? '#0078d4' : '#333';
+            const bgColor = isAgent ? '#f0f8ff' : '#faf9f8';
+            const borderColor = isAgent ? '#d0e8f2' : '#eee';
+            const titleColor = isAgent ? '#0078d4' : '#333';
             const displayName = isAgent ? 'Agent' : 'Customer';
-            return `<div style="margin-bottom: 8px; page-break-inside: avoid; word-wrap: break-word;">
-                <strong style="color: ${color};">${displayName}:</strong> 
-                <span style="color: #333; word-wrap: break-word;">${t.text}</span>
+            return `<div style="margin-bottom: 15px; padding: 15px; border: 1px solid ${borderColor}; border-radius: 8px; background-color: ${bgColor}; page-break-inside: avoid; word-wrap: break-word;">
+                <strong style="color: ${titleColor}; display: block; margin-bottom: 8px;">${displayName}</strong> 
+                <div style="color: #333; line-height: 1.5; white-space: pre-wrap;">${t.text}</div>
             </div>`;
         }).join('');
+        
+        transcriptContainer.innerHTML = htmlContent;
     } else {
         transcriptContainer.innerHTML = '<div style="color: #666; font-style: italic;">No transcript available.</div>';
     }
@@ -204,58 +261,42 @@ function populateAgentPDFTemplate(agentData, sessions) {
     if (!agentData || !sessions) return null;
     
     document.getElementById('pdfAgentReportDate').textContent = new Date().toLocaleString();
-    document.getElementById('pdfAgentReportName').textContent = agentData.name || "Unknown Agent";
+    document.getElementById('pdfAgentReportName').textContent = agentData.agent_name || "Unknown Agent";
     
     let totalScore = 0;
-    let emotions = {};
-    let analyzedCount = 0;
     
     const completedSessions = sessions.filter(s => s.status !== "pending");
     
     completedSessions.forEach(s => {
         const ev = s.stage5_evaluation?.transcript_evaluation || {};
         totalScore += (ev.overall_score_percentage || 0);
-        
-        const agentSpk = ev.agent_speaker_label || "";
-        const spkEm = s.stage5_evaluation?.speaker_emotions || {};
-        if (agentSpk && spkEm[agentSpk]) {
-            const callEmotions = spkEm[agentSpk].all_emotions || {};
-            if (Object.keys(callEmotions).length > 0) {
-                analyzedCount++;
-                Object.entries(callEmotions).forEach(([emo, pct]) => {
-                    emotions[emo.toLowerCase()] = (emotions[emo.toLowerCase()] || 0) + pct;
-                });
-            } else if (spkEm[agentSpk].emotion && spkEm[agentSpk].emotion !== "N/A") {
-                analyzedCount++;
-                const e = spkEm[agentSpk].emotion.toLowerCase();
-                emotions[e] = (emotions[e] || 0) + 100;
-            }
-        }
     });
     
-    const avgScore = completedSessions.length > 0 ? (totalScore / completedSessions.length) : 0;
+    const avgScore = (totalScore / completedSessions.length) || 0;
     document.getElementById('pdfAgentReportScore').textContent = avgScore.toFixed(1) + '%';
+    document.getElementById('pdfAgentReportScore').style.color = getScoreBgColor(avgScore);
     document.getElementById('pdfAgentReportCalls').textContent = completedSessions.length;
     
-    let primaryEmotion = "Neutral";
-    let maxEm = -1;
-    if (analyzedCount > 0) {
-        Object.entries(emotions).forEach(([k, v]) => {
-            if (v > maxEm) { maxEm = v; primaryEmotion = k; }
-        });
-        primaryEmotion = primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1);
+    if (typeof qaRadarChartInstance !== 'undefined' && qaRadarChartInstance) {
+        document.getElementById('pdfAgentChartRadar').src = qaRadarChartInstance.toBase64Image();
+        document.getElementById('pdfAgentChartRadar').style.display = 'block';
     }
-    document.getElementById('pdfAgentReportEmotion').textContent = primaryEmotion;
+    if (typeof performanceDistributionChartInstance !== 'undefined' && performanceDistributionChartInstance) {
+        document.getElementById('pdfAgentChartDoughnut').src = performanceDistributionChartInstance.toBase64Image();
+        document.getElementById('pdfAgentChartDoughnut').style.display = 'block';
+    }
+    if (typeof topImprovementAreasChartInstance !== 'undefined' && topImprovementAreasChartInstance) {
+        document.getElementById('pdfAgentChartBar').src = topImprovementAreasChartInstance.toBase64Image();
+        document.getElementById('pdfAgentChartBar').style.display = 'block';
+    }
     
     const sessionsList = document.getElementById('pdfAgentReportSessionsList');
     sessionsList.innerHTML = completedSessions.map(s => {
         const d = new Date(s.created_at * 1000).toLocaleDateString();
-        const t = s.topic || "N/A";
         const score = (s.stage5_evaluation?.transcript_evaluation?.overall_score_percentage || 0).toFixed(1) + "%";
         return `
             <tr>
                 <td style="padding: 10px; border: 1px solid #ddd;">${d}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">${t}</td>
                 <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${score}</td>
             </tr>
         `;
@@ -280,6 +321,10 @@ let selectedBulkFile = null;
 
 let currentSessionData = null;
 const addAgentModal = document.getElementById("addAgentModal");
+const addAgentModalClose = document.getElementById("addAgentModalClose");
+const editAgentModal = document.getElementById("editAgentModal");
+const editAgentModalClose = document.getElementById("editAgentModalClose");
+const editAgentForm = document.getElementById("editAgentForm");
 
 const navAnalytics = document.getElementById("navAnalytics");
 const navMail = document.getElementById("navMail");
@@ -304,6 +349,10 @@ const progressBarFill = document.getElementById("progressBarFill");
 const progressPercentage = document.getElementById("progressPercentage");
 const searchAgents = document.getElementById("searchAgents");
 const agentList = document.getElementById("agentList");
+const agentDepartmentFilter = document.getElementById("agentDepartmentFilter");
+const customDepartmentContainer = document.getElementById("customDepartmentContainer");
+const customDepartmentInput = document.getElementById("customDepartmentInput");
+const btnApplyCustomDepartment = document.getElementById("btnApplyCustomDepartment");
 
 const agentDetailsPane = document.getElementById("agentDetailsPane");
 const selectedAgentName = document.getElementById("selectedAgentName");
@@ -436,6 +485,23 @@ function setupEventListeners() {
         });
     }
 
+    if(editAgentModalClose) editAgentModalClose.addEventListener("click", () => editAgentModal.classList.remove("open"));
+    if(editAgentForm) {
+        editAgentForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await submitEditAgent();
+        });
+    }
+
+    // Close modals on background click
+    window.addEventListener("click", (e) => {
+        if (e.target === addAgentModal) addAgentModal.classList.remove("open");
+        if (e.target === editAgentModal) editAgentModal.classList.remove("open");
+        if (typeof unifiedUploadModal !== 'undefined' && e.target === unifiedUploadModal) unifiedUploadModal.classList.remove("open");
+        if (typeof emailComposeModal !== 'undefined' && e.target === emailComposeModal) emailComposeModal.classList.remove("open");
+        if (typeof analyticsModal !== 'undefined' && e.target === analyticsModal) analyticsModal.classList.remove("open");
+    });
+
 
     if(bulkAgentsDropZone) {
         bulkAgentsDropZone.addEventListener("click", () => bulkAgentsFileInput.click());
@@ -503,8 +569,9 @@ function setupEventListeners() {
               margin:       0.5,
               filename:     `Scorecard_${currentSessionId}.pdf`,
               image:        { type: 'jpeg', quality: 0.98 },
-              html2canvas:  { scale: 2 },
-              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+              html2canvas:  { scale: 1 },
+              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+              pagebreak:    { mode: ['css', 'legacy'] }
             };
             
             html2pdf().set(opt).from(element).save().then(() => {
@@ -521,11 +588,11 @@ function setupEventListeners() {
             
             // currentAgentId is the agent's email address
             const agentEmail = currentAgentId; 
-            const subject = encodeURIComponent(`Performance Review & Feedback - ${currentSessionData.topic || currentSessionData.session_id}`);
+            const subject = encodeURIComponent(`Performance Review & Feedback - ${currentSessionData.displayTitle || currentSessionData.session_id}`);
             
             const bodyText = `Hi ${currentAgentName},
 
-Here is the feedback and analysis for your recent call (${currentSessionData.topic || currentSessionData.session_id}):
+Here is the feedback and analysis for your recent call (${currentSessionData.displayTitle || currentSessionData.session_id}):
 
 OVERALL SCORE: ${ev.overall_score_percentage || 0}%
 
@@ -573,8 +640,9 @@ Management`;
               margin:       0.5,
               filename:     `Scorecard_${currentSessionId}.pdf`,
               image:        { type: 'jpeg', quality: 0.98 },
-              html2canvas:  { scale: 2 },
-              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+              html2canvas:  { scale: 1 },
+              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+              pagebreak:    { mode: ['css', 'legacy'] }
             };
             
             html2pdf().set(opt).from(element).outputPdf('blob').then(async (pdfBlob) => {
@@ -614,47 +682,14 @@ Management`;
             });
         });
     }
-
-    if(btnExportSessionCSV) {
-        btnExportSessionCSV.addEventListener("click", () => {
-            if(!currentSessionData) return;
-            const ev = currentSessionData.stage5_evaluation?.transcript_evaluation || {};
-            
-            // Build CSV columns dynamically
-            let metricHeaders = ['Agent Name', 'Overall Score'];
-            let metricValues = [ev.agent_name || '', (ev.overall_score_percentage || 0) + '%'];
-            
-            const cats = ['communication_professionalism', 'technical_accuracy', 'process_adherence', 'customer_experience', 'efficiency_metrics'];
-            cats.forEach(cat => {
-                if(ev[cat]) {
-                    Object.entries(ev[cat]).forEach(([k, v]) => {
-                        metricHeaders.push(k.replace(/_/g, ' '));
-                        metricValues.push(v);
-                    });
-                }
-            });
-            
-            let csvRows = [metricHeaders, metricValues];
-            
-            const csvContent = csvRows.map(e => e.join(",")).join("\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Session_${currentSessionId}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-    }
-
+    // btnExportSessionCSV removed
     // removed redeclaration of btnExportAgentPDF
     if(btnExportAgentPDF) {
         btnExportAgentPDF.addEventListener("click", () => {
             if(!currentAgentName || !currentAgentSessionsData) return;
             
             const agent = window.globalAgentsList?.find(a => a.agent_id === currentAgentId);
-            const element = populateAgentPDFTemplate(agent || { name: currentAgentName }, currentAgentSessionsData);
+            const element = populateAgentPDFTemplate(agent || { agent_name: currentAgentName }, currentAgentSessionsData);
             if (!element) return showToast("No agent data available.", true);
             
             element.style.display = "block";
@@ -663,8 +698,9 @@ Management`;
               margin:       0.5,
               filename:     `AgentReport_${currentAgentName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
               image:        { type: 'jpeg', quality: 0.98 },
-              html2canvas:  { scale: 2 },
-              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+              html2canvas:  { scale: 1 },
+              jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+              pagebreak:    { mode: ['css', 'legacy'] }
             };
             
             html2pdf().set(opt).from(element).save().then(() => {
@@ -678,27 +714,88 @@ Management`;
         btnExportAgentCSV.addEventListener("click", () => {
             if(!currentAgentName || !currentAgentSessionsData) return;
             
-            let csvRows = [];
-            csvRows.push(['Session ID', 'Topic', 'Date', 'Score', 'Status']);
+            const sessions = currentAgentSessionsData.filter(s => s.status !== "pending");
+            if (sessions.length === 0) {
+                showToast("No completed sessions to export.");
+                return;
+            }
             
-            currentAgentSessionsData.forEach(s => {
-                const date = new Date(s.created_at * 1000).toLocaleString().replace(/,/g, '');
-                const score = (s.stage5_evaluation?.transcript_evaluation?.overall_score_percentage || 0) + '%';
-                csvRows.push([
-                    s.session_id, 
-                    `"${(s.topic || '').replace(/"/g, '""')}"`, 
-                    date, 
-                    score, 
-                    s.status
-                ]);
+            const count = sessions.length;
+            let totalOverall = 0;
+            
+            let sums = {
+                comm: 0, greeting: 0, listening: 0, probing: 0, validating: 0,
+                tech: 0, troubleshooting: 0, solution: 0, escalation: 0, knowledge: 0,
+                proc: 0, critical: 0, ticket: 0, time_entry: 0,
+                cust: 0, ownership: 0, stakeholder: 0, proper_closing: 0,
+                eff: 0, first_call: 0, thirty_min: 0, minimal_transfers: 0
+            };
+            
+            sessions.forEach(s => {
+                const ev = s.stage5_evaluation?.transcript_evaluation || {};
+                totalOverall += (ev.overall_score_percentage || 0);
+                
+                const comm = ev.communication_professionalism || {};
+                sums.greeting += comm.greeting_verification || 0;
+                sums.listening += comm.active_listening_empathy || 0;
+                sums.probing += comm.probing_issue || 0;
+                sums.validating += comm.validating_priority || 0;
+                sums.comm += ((comm.greeting_verification||0) + (comm.active_listening_empathy||0) + (comm.probing_issue||0) + (comm.validating_priority||0)) / 20 * 100;
+                
+                const tech = ev.technical_accuracy || {};
+                sums.troubleshooting += tech.accurate_troubleshooting || 0;
+                sums.solution += tech.solution_accuracy || 0;
+                sums.escalation += tech.valid_escalation || 0;
+                sums.knowledge += tech.knowledge_base_use || 0;
+                sums.tech += ((tech.accurate_troubleshooting||0) + (tech.solution_accuracy||0) + (tech.valid_escalation||0) + (tech.knowledge_base_use||0)) / 30 * 100;
+                
+                const proc = ev.process_adherence || {};
+                sums.critical += proc.critical_compliance || 0;
+                sums.ticket += proc.ticket_documentation || 0;
+                sums.time_entry += proc.time_entry_agreement || 0;
+                sums.proc += ((proc.critical_compliance||0) + (proc.ticket_documentation||0) + (proc.time_entry_agreement||0)) / 20 * 100;
+                
+                const cust = ev.customer_experience || {};
+                sums.ownership += cust.incident_ownership || 0;
+                sums.stakeholder += cust.stakeholder_communication || 0;
+                sums.proper_closing += cust.proper_closing_satisfaction || 0;
+                sums.cust += ((cust.incident_ownership||0) + (cust.stakeholder_communication||0) + (cust.proper_closing_satisfaction||0)) / 20 * 100;
+                
+                const eff = ev.efficiency_metrics || {};
+                sums.first_call += eff.first_call_resolution || 0;
+                sums.thirty_min += eff.thirty_minute_rule || 0;
+                sums.minimal_transfers += eff.minimal_transfers_holds || 0;
+                sums.eff += ((eff.first_call_resolution||0) + (eff.thirty_minute_rule||0) + (eff.minimal_transfers_holds||0)) / 10 * 100;
             });
+            
+            const avg = (val) => (val / count).toFixed(1);
+            const date = new Date().toLocaleDateString();
+            
+            let csvRows = [];
+            csvRows.push([
+                'Agent Name', 'Export Date', 'Total Calls', 'Avg Overall Score (%)',
+                'Comm Score (%)', 'Greeting & Verification (/5)', 'Active Listening (/5)', 'Probing (/5)', 'Validating Priority (/5)',
+                'Tech Score (%)', 'Accurate Troubleshooting (/10)', 'Solution Accuracy (/10)', 'Valid Escalation (/5)', 'Knowledge Base Use (/5)',
+                'Process Score (%)', 'Critical/P1 Compliance (/5)', 'Ticket Documentation (/10)', 'Time Entry (/5)',
+                'Customer Exp Score (%)', 'Incident Ownership (/5)', 'Stakeholder Comm (/10)', 'Proper Closing (/5)',
+                'Efficiency Score (%)', 'First Call Res (/5)', '30 Min Rule (/3)', 'Minimal Transfers (/2)'
+            ]);
+            
+            csvRows.push([
+                `"${currentAgentName.replace(/"/g, '""')}"`, date, count, avg(totalOverall),
+                avg(sums.comm), avg(sums.greeting), avg(sums.listening), avg(sums.probing), avg(sums.validating),
+                avg(sums.tech), avg(sums.troubleshooting), avg(sums.solution), avg(sums.escalation), avg(sums.knowledge),
+                avg(sums.proc), avg(sums.critical), avg(sums.ticket), avg(sums.time_entry),
+                avg(sums.cust), avg(sums.ownership), avg(sums.stakeholder), avg(sums.proper_closing),
+                avg(sums.eff), avg(sums.first_call), avg(sums.thirty_min), avg(sums.minimal_transfers)
+            ]);
             
             const csvContent = csvRows.map(e => e.join(",")).join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `Agent_${currentAgentName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+            link.setAttribute("download", `Agent_Aggregate_${currentAgentName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -837,7 +934,41 @@ Management`;
     });
     unifiedUploadForm.addEventListener("submit", (e) => { e.preventDefault(); startAnalysis(); });
 
-    searchAgents.addEventListener("input", (e) => filterAgents(e.target.value));
+    if (searchAgents) {
+        searchAgents.addEventListener("input", (e) => filterAgents(e.target.value));
+    }
+    
+    if (agentDepartmentFilter) {
+        agentDepartmentFilter.addEventListener("change", (e) => {
+            if (e.target.value === "custom") {
+                customDepartmentContainer.style.display = "flex";
+            } else {
+                customDepartmentContainer.style.display = "none";
+                filterAgents(searchAgents ? searchAgents.value : "");
+            }
+        });
+    }
+    
+    if (btnApplyCustomDepartment) {
+        btnApplyCustomDepartment.addEventListener("click", () => {
+            const customDep = customDepartmentInput.value.trim();
+            if (customDep) {
+                // Add option if not exists, matching case-insensitively
+                let matchedOption = Array.from(agentDepartmentFilter.options).find(o => o.value.toLowerCase() === customDep.toLowerCase());
+                if (!matchedOption) {
+                    const newOption = document.createElement('option');
+                    newOption.value = customDep;
+                    newOption.textContent = customDep;
+                    agentDepartmentFilter.insertBefore(newOption, agentDepartmentFilter.lastElementChild);
+                    agentDepartmentFilter.value = customDep;
+                } else {
+                    agentDepartmentFilter.value = matchedOption.value;
+                }
+                customDepartmentContainer.style.display = "none";
+                filterAgents(searchAgents ? searchAgents.value : "");
+            }
+        });
+    }
 
     let isEndDateManuallyChanged = false;
 
@@ -870,6 +1001,7 @@ Management`;
         loadAgents();
     });
 
+    const themeToggle = document.getElementById("themeToggle");
     if(themeToggle) {
         themeToggle.addEventListener("click", () => {
             const isDark = document.body.classList.toggle("dark-theme");
@@ -935,7 +1067,7 @@ function handleBulkFileSelect(file) {
 }
 
 async function reevaluateCurrentSession() {
-    if (!currentSessionId) return alert("No session selected.");
+    if (!currentSessionId) return showToast("No session selected.", true);
     // We need a topic. If current session doesn't have it locally, we just pass the existing one.
     // In our UI, sessionTopic.textContent has it.
     const topic = document.getElementById("sessionTopic").textContent;
@@ -967,7 +1099,7 @@ async function reevaluateCurrentSession() {
         }
     } catch (e) {
         progressPanel.classList.remove("open");
-        alert(e.message);
+        showToast(e.message, true);
     }
 }
 
@@ -990,7 +1122,7 @@ window.runPendingAnalysis = async function(e, sessionId) {
         }
     } catch (e) {
         progressPanel.classList.remove("open");
-        alert(e.message);
+        showToast(e.message, true);
     }
 };
 
@@ -1013,21 +1145,30 @@ async function loadAgents() {
         const renderAgentItem = (agent) => {
             const scoreDisplay = agent.total_calls === 0 ? "N/A" : `${agent.avg_score}%`;
             const badgeBg = getScoreBgColor(agent.avg_score, agent.total_calls === 0);
+            const depAttr = agent.department ? `data-department="${agent.department.toLowerCase()}"` : `data-department=""`;
             
             return `
-            <div class="session-item ${agent.is_deleted ? 'agent-deleted' : ''}" data-id="${agent.agent_id}" onclick="selectAgent('${agent.agent_id}', '${agent.agent_name.replace(/'/g, "\\'")}')" ${agent.is_deleted ? 'style="color: var(--accent-red); opacity: 0.6;"' : ''}>
+            <div class="session-item ${agent.is_deleted ? 'agent-deleted' : ''}" data-id="${agent.agent_id}" ${depAttr} onclick="selectAgent('${agent.agent_id}', '${agent.agent_name.replace(/'/g, "\\'")}')" ${agent.is_deleted ? 'style="color: var(--accent-red); opacity: 0.6;"' : ''}>
                 <div class="session-item-top" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
                     <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
                         <span class="session-title" style="word-break: break-word; ${agent.is_deleted ? 'color: var(--accent-red);' : ''}">${agent.agent_name} ${agent.agent_id !== agent.agent_name ? `<span style="font-size: 14px; opacity: 0.7;">(${agent.agent_id})</span>` : ''}</span>
                         <div class="session-meta">
-                            <span>${agent.total_calls} calls</span>
+                            <span>${agent.total_calls} calls ${agent.department ? `| ${agent.department}` : ''}</span>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                         <span class="score-badge" style="background-color: ${badgeBg}; color: ${badgeBg === uiColors.na ? '#202124' : '#fff'};">${scoreDisplay}</span>
-                        <button class="icon-btn delete-agent-btn" onclick="deleteAgent(event, '${agent.agent_id}')" title="Delete Agent" style="background: none; border: none; color: ${agent.is_deleted ? 'transparent' : 'var(--text-secondary)'}; cursor: ${agent.is_deleted ? 'default' : 'pointer'};">
-                            <i class="ms-Icon ms-Icon--Delete" style="font-size: 17px;"></i>
-                        </button>
+                        ${agent.is_deleted ? 
+                            `<button class="icon-btn" onclick="restoreAgent(event, '${agent.agent_id}')" title="Restore Agent" style="background: none; border: none; color: var(--accent-blue); cursor: pointer;">
+                                <i class="ms-Icon ms-Icon--Undo" style="font-size: 17px;"></i>
+                            </button>` :
+                            `<button class="icon-btn edit-agent-btn" onclick="window.openEditAgentModal(event, '${agent.agent_id}')" title="Edit Agent" style="background: none; border: none; color: var(--outlook-blue); cursor: pointer; margin-right: 5px;">
+                                <i class="ms-Icon ms-Icon--Edit" style="font-size: 17px;"></i>
+                            </button>
+                            <button class="icon-btn delete-agent-btn" onclick="deleteAgent(event, '${agent.agent_id}')" title="Delete Agent" style="background: none; border: none; color: var(--text-secondary); cursor: pointer;">
+                                <i class="ms-Icon ms-Icon--Delete" style="font-size: 17px;"></i>
+                            </button>`
+                        }
                     </div>
                 </div>
             </div>
@@ -1055,7 +1196,7 @@ async function loadAgents() {
         
         let firstRenderedAgent = activeWithCalls.length > 0 ? activeWithCalls[0] : (activeWithoutCalls.length > 0 ? activeWithoutCalls[0] : (deletedAgents.length > 0 ? deletedAgents[0] : null));
         if (firstRenderedAgent) {
-            selectAgent(firstRenderedAgent.agent_id, firstRenderedAgent.agent_name);
+            selectAgent(firstRenderedAgent.agent_id, firstRenderedAgent.agent_name, true);
         }
     } catch (e) {
         agentList.innerHTML = '<p class="error-msg">Failed to load agents.</p>';
@@ -1063,9 +1204,25 @@ async function loadAgents() {
 }
 
 function filterAgents(q) {
-    const term = q.toLowerCase();
+    const term = (q || '').toLowerCase();
+    const selectedDep = agentDepartmentFilter ? agentDepartmentFilter.value : "all";
+    
     agentList.querySelectorAll(".session-item").forEach(el => {
-        if (el.querySelector(".session-title").textContent.toLowerCase().includes(term)) {
+        const titleText = el.querySelector(".session-title").textContent.toLowerCase();
+        const agentDep = el.getAttribute("data-department") || "";
+        const titleMatch = titleText.includes(term) || agentDep.includes(term);
+        let depMatch = true;
+        
+        if (selectedDep !== "all" && selectedDep !== "custom") {
+            // Special handling for "Support / Tech Support" option
+            if (selectedDep === "Support") {
+                depMatch = agentDep.includes("support");
+            } else {
+                depMatch = agentDep === selectedDep.toLowerCase();
+            }
+        }
+        
+        if (titleMatch && depMatch) {
             el.style.display = "flex";
         } else {
             el.style.display = "none";
@@ -1073,14 +1230,16 @@ function filterAgents(q) {
     });
 }
 
-async function selectAgent(agentId, agentName) {
+async function selectAgent(agentId, agentName, isAuto = false) {
     currentAgentId = agentId;
     currentAgentName = agentName;
     selectedAgentName.textContent = agentName;
     
     // Update responsive state
-    outlookApp.classList.remove("state-agent-list", "state-recording-analysis");
-    outlookApp.classList.add("state-agent-details");
+    if (!isAuto || window.innerWidth > 768) {
+        outlookApp.classList.remove("state-agent-list", "state-recording-analysis");
+        outlookApp.classList.add("state-agent-details");
+    }
     
     // Disable uploads if deleted
     const btnUploadSingle = document.getElementById("btnUploadAudio");
@@ -1130,6 +1289,11 @@ async function selectAgent(agentId, agentName) {
     try {
         const res = await fetch(url);
         const sessions = await res.json();
+        
+        const chronologicalSessions = [...sessions].sort((a, b) => a.created_at - b.created_at);
+        chronologicalSessions.forEach((s, index) => {
+            s.displayTitle = `Call ${index + 1}`;
+        });
         
         const sortMode = sessionSortFilter ? sessionSortFilter.value : "newest";
         sessions.sort((a, b) => {
@@ -1201,23 +1365,25 @@ async function selectAgent(agentId, agentName) {
 
         agentSessionsList.innerHTML = sessions.map(session => {
             const isPending = session.status === "pending";
+            const isFailed = session.status === "failed";
             const ev = session.stage5_evaluation?.transcript_evaluation || {};
             let score = ev.overall_score_percentage || 0;
             let badgeBg = getScoreBgColor(score, false);
             
-            let badgeHtml = isPending 
-                ? `<button class="fluent-btn-primary" style="padding: 2px 8px; font-size: 14px; min-width: auto; height: 22px;" onclick="runPendingAnalysis(event, '${session.session_id}')">Analyze</button>`
-                : `<span class="score-badge" style="background-color: ${badgeBg}; color: #fff;">${score.toFixed(1)}%</span>`;
+            let badgeHtml = "";
+            if (isPending || isFailed) {
+                badgeHtml = `<button class="fluent-btn-primary" style="padding: 2px 8px; font-size: 14px; min-width: auto; height: 22px; ${isFailed ? 'background-color: var(--text-danger);' : ''}" onclick="runPendingAnalysis(event, '${session.session_id}')">${isFailed ? 'Retry' : 'Analyze'}</button>`;
+            } else {
+                badgeHtml = `<span class="score-badge" style="background-color: ${badgeBg}; color: #fff;">${score.toFixed(1)}%</span>`;
+            }
                 
             return `
                 <div class="session-item" data-id="${session.session_id}" onclick="selectSession('${session.session_id}')">
                     <div class="session-item-top">
-                        <span class="session-title">${session.topic || 'Session'}</span>
+                        <span class="session-title">${session.displayTitle || 'Session'}</span>
                         ${badgeHtml}
                     </div>
-                    <div class="session-desc">Score: ${isPending ? 'Pending' : score.toFixed(1) + '%'}</div>
                     <div class="session-meta">
-                        <span>ID: ${session.session_id.substring(0,6)}...</span>
                         <span>${new Date(session.created_at * 1000).toLocaleDateString()}</span>
                     </div>
                 </div>
@@ -1225,7 +1391,8 @@ async function selectAgent(agentId, agentName) {
         }).join("");
         
         if (sessions.length > 0) {
-            selectSession(sessions[0].session_id);
+            // Always treat auto-selecting the first session as 'auto' so mobile UI doesn't jump
+            selectSession(sessions[0].session_id, true);
         }
 
     } catch (e) {
@@ -1233,15 +1400,17 @@ async function selectAgent(agentId, agentName) {
     }
 }
 
-async function selectSession(sessionId) {
+async function selectSession(sessionId, isAuto = false) {
     currentSessionId = sessionId;
     agentSessionsList.querySelectorAll(".session-item").forEach(el => {
         el.classList.toggle("selected", el.dataset.id === sessionId);
     });
 
     // Update responsive state
-    outlookApp.classList.remove("state-agent-list", "state-agent-details");
-    outlookApp.classList.add("state-recording-analysis");
+    if (!isAuto || window.innerWidth > 768) {
+        outlookApp.classList.remove("state-agent-list", "state-agent-details");
+        outlookApp.classList.add("state-recording-analysis");
+    }
 
     try {
         const response = await fetch(`/api/sessions/${sessionId}`);
@@ -1249,7 +1418,7 @@ async function selectSession(sessionId) {
         currentSessionData = session;
         renderSessionReport(session);
     } catch (err) {
-        alert("Failed to load session details.");
+        showToast("Failed to load session details.", true);
     }
 }
 
@@ -1259,13 +1428,28 @@ function renderSessionReport(session) {
         readingPaneContent.classList.add("hidden");
         emptyState.innerHTML = `<i class="ms-Icon ms-Icon--Processing" aria-hidden="true" style="font-size: 48px; color: var(--outlook-blue);"></i><h1 style="margin-top: 20px;">Pending Analysis</h1><p>Click the Analyze button in the sessions list to process this recording.</p>`;
         return;
+    } else if (session.status === "failed") {
+        emptyState.classList.remove("hidden");
+        readingPaneContent.classList.add("hidden");
+        emptyState.innerHTML = `<i class="ms-Icon ms-Icon--Error" aria-hidden="true" style="font-size: 48px; color: var(--text-danger, #d13438);"></i><h1 style="margin-top: 20px;">Analysis Failed</h1><p>${session.error || "An error occurred during analysis."}</p>`;
+        return;
+    } else if (session.status === "no_speech_detected") {
+        emptyState.classList.remove("hidden");
+        readingPaneContent.classList.add("hidden");
+        emptyState.innerHTML = `<i class="ms-Icon ms-Icon--MicOff2" aria-hidden="true" style="font-size: 48px; color: var(--text-danger, #d13438);"></i><h1 style="margin-top: 20px;">No Speech Detected</h1><p>No human speech could be detected in this audio file.</p>`;
+        return;
     } else {
         emptyState.innerHTML = `<i class="ms-Icon ms-Icon--Audio" aria-hidden="true"></i><h1>Select a Recording</h1><p>Select a session from the middle panel to view its detailed QA scorecard.</p>`;
         emptyState.classList.add("hidden");
         readingPaneContent.classList.remove("hidden");
     }
 
-    sessionTopic.textContent = session.topic || "Voice Session";
+    const sessionListItem = currentAgentSessionsData?.find(s => s.session_id === session.session_id);
+    const displayTitle = sessionListItem?.displayTitle || session.topic || "Voice Session";
+    sessionTopic.textContent = displayTitle;
+    
+    // Attach to currentSessionData for use in PDF/Email
+    currentSessionData.displayTitle = displayTitle;
     
     // Master audio player (PII scrubbed)
     masterAudioPlayer.src = `/static/audio/${session.session_id}/beeped_input.wav`;
@@ -1340,7 +1524,7 @@ function renderSessionReport(session) {
         sessionSenderName.textContent = "Scored by AI";
         senderAvatar.textContent = "AI";
         if(sessionDetailsMeta) {
-            sessionDetailsMeta.textContent = `Agent: ${ev.agent_name || "Agent"} | Completed`;
+            sessionDetailsMeta.textContent = `Agent: ${currentAgentName || "Unknown Agent"} | Completed`;
         }
 
         function renderMetric(label, value, max) {
@@ -1364,7 +1548,7 @@ function renderSessionReport(session) {
         };
 
         const catHTML = `
-            <div class="scorecard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 20px;">
+            <div class="scorecard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; margin-top: 20px;">
                 
                 <!-- Communication & Professionalism -->
                 <div class="scorecard-section" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; overflow: hidden;">
@@ -1720,8 +1904,8 @@ function renderCharts(sessions) {
             borderWidth: 2,
             fill: true
         }, {
-            label: 'Target Benchmark (85%)',
-            data: [85, 85, 85, 85, 85],
+            label: `Target Benchmark (${targetBenchmark}%)`,
+            data: [targetBenchmark, targetBenchmark, targetBenchmark, targetBenchmark, targetBenchmark],
             backgroundColor: 'rgba(255, 159, 64, 0.1)',
             borderColor: 'rgba(255, 159, 64, 0.8)',
             borderDash: [5, 5],
@@ -1928,7 +2112,7 @@ function renderCharts(sessions) {
 
 // Upload & Poll Logic
 async function startAnalysis() {
-    if (!selectedFiles || selectedFiles.length === 0) return alert("Please select a file to upload.");
+    if (!selectedFiles || selectedFiles.length === 0) return showToast("Please select a file to upload.", true);
 
     // Check if it's a zip file
     const isZip = document.querySelector('input[name="uploadType"]:checked').value === "zip";
@@ -1963,18 +2147,18 @@ async function startAnalysis() {
                 const data = await res.json();
                 progressMessage.textContent = `Upload complete (${file.name}). Processing...`;
                 progressBarFill.style.width = "100%";
-                pollSessionStatus(data.session_id, file.name);
+                pollAnalysisStatus(data.session_id);
                 await new Promise(r => setTimeout(r, 1000));
             } else if (res.status === 409) {
                 const errData = await res.json();
-                alert(`Duplicate Upload: ${errData.message}`);
+                showToast(`Duplicate Upload: ${errData.message}`, true);
                 progressPanel.classList.remove("open");
             } else {
-                alert(`Analysis failed to start for ${file.name}.`);
+                showToast(`Analysis failed to start for ${file.name}.`, true);
             }
         } catch(e) {
             console.error(e);
-            alert(`Upload error for ${file.name}.`);
+            showToast(`Upload error for ${file.name}.`, true);
         }
     }
     setTimeout(() => {
@@ -2021,7 +2205,7 @@ async function startBulkAnalysis() {
             loadAgents();
         }
     } catch (err) {
-        alert(err.message);
+        showToast(err.message, true);
         progressPanel.classList.remove("open");
     }
 }
@@ -2051,7 +2235,7 @@ function pollAnalysisStatus(sessionId) {
         } else if (task.status === "failed") {
             clearInterval(activePollInterval);
             progressPanel.classList.remove("open");
-            alert("Analysis failed.");
+            showToast("Analysis failed.", true);
         }
     }, 2000);
 }
@@ -2084,22 +2268,22 @@ async function deleteCurrentSession() {
 }
 
 async function submitNewAgent() {
-    if(!newAgentNameInput.value) return alert("Agent name required.");
+    if(!newAgentNameInput.value) return showToast("Agent name required.", true);
     
     const idInput = document.getElementById("newAgentIdInput");
-    if(!idInput || !idInput.value) return alert("Agent Email required.");
+    if(!idInput || !idInput.value) return showToast("Agent Email required.", true);
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(idInput.value)) {
-        return alert("Please enter a valid email address.");
+        return showToast("Please enter a valid email address.", true);
     }
     
     const locInput = document.getElementById("newAgentLocationInput");
-    if(!locInput || !locInput.value) return alert("Location required.");
+    if(!locInput || !locInput.value) return showToast("Location required.", true);
     
     const depInput = document.getElementById("newAgentDepartmentInput");
-    if(!depInput || !depInput.value) return alert("Department required.");
+    if(!depInput || !depInput.value) return showToast("Department required.", true);
 
     const formData = new FormData();
     formData.append("agent_name", newAgentNameInput.value);
@@ -2112,9 +2296,9 @@ async function submitNewAgent() {
         if(res.ok) {
             const data = await res.json();
             if (data.is_duplicate) {
-                alert("Agent with this email already exists.");
+                showToast("Agent with this email already exists.", true);
             } else {
-                alert("Agent added successfully.");
+                showToast("Agent added successfully.", false);
             }
             addAgentModal.classList.remove("open");
             addAgentForm.reset();
@@ -2123,12 +2307,41 @@ async function submitNewAgent() {
             throw new Error("Failed to add agent.");
         }
     } catch(err) {
-        alert(err.message);
+        showToast("Error adding agent.", true);
+    }
+}
+
+async function submitEditAgent() {
+    const originalId = document.getElementById("editAgentIdOriginal").value;
+    const name = document.getElementById("editAgentNameInput").value;
+    const newId = document.getElementById("editAgentIdInput").value;
+    const loc = document.getElementById("editAgentLocationInput").value;
+    const dept = document.getElementById("editAgentDepartmentInput").value;
+
+    const formData = new FormData();
+    formData.append("agent_name", name);
+    formData.append("new_agent_id", newId);
+    formData.append("location", loc);
+    formData.append("department", dept);
+
+    try {
+        const res = await fetch(`/api/agents/${encodeURIComponent(originalId)}`, { method: "PUT", body: formData });
+        const data = await res.json();
+
+        if (data.status === "success") {
+            showToast("Agent updated successfully.");
+            editAgentModal.classList.remove("open");
+            loadAgents(); // Reload list
+        } else {
+            showToast(data.detail || "Failed to update agent.", true);
+        }
+    } catch (err) {
+        showToast("Error updating agent.", true);
     }
 }
 
 async function startBulkAddAgents() {
-    if(!selectedBulkFile) return alert("Select a CSV file.");
+    if(!selectedBulkFile) return showToast("Select a CSV file.", true);
     const formData = new FormData();
     formData.append("file", selectedBulkFile);
 
@@ -2168,7 +2381,7 @@ async function startBulkAddAgents() {
             throw new Error("Failed to bulk add agents.");
         }
     } catch(err) {
-        alert(err.message);
+        showToast(err.message, true);
     }
 }
 
@@ -2222,6 +2435,7 @@ function makeDraggable(modalId) {
 
 // Apply draggability
 makeDraggable('addAgentModal');
+makeDraggable('editAgentModal');
 makeDraggable('analyticsModal');
 makeDraggable('unifiedUploadModal');
 
@@ -2240,4 +2454,32 @@ window.deleteAgent = async function(event, agentId) {
             showToast("Failed to delete agent.", true);
         }
     });
+};
+
+window.openEditAgentModal = function(event, agentId) {
+    event.stopPropagation();
+    const agent = window.globalAgentsList?.find(a => a.agent_id === agentId);
+    if (!agent) return;
+    
+    document.getElementById("editAgentIdOriginal").value = agent.agent_id;
+    document.getElementById("editAgentNameInput").value = agent.agent_name || "";
+    document.getElementById("editAgentIdInput").value = agent.agent_id || "";
+    document.getElementById("editAgentLocationInput").value = agent.location || "";
+    document.getElementById("editAgentDepartmentInput").value = agent.department || "";
+    editAgentModal.classList.add("open");
+};
+
+window.restoreAgent = async function(event, agentId) {
+    event.stopPropagation();
+    try {
+        const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}/restore`, { method: "POST" });
+        if (res.ok) {
+            showToast("Agent restored.");
+            loadAgents();
+        } else {
+            showToast("Failed to restore agent.", true);
+        }
+    } catch(e) {
+        showToast("Failed to restore agent.", true);
+    }
 };

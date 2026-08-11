@@ -68,7 +68,8 @@ def beep_audio(audio_path: str, output_path: str, beep_timestamps: List[Dict[str
             if duration <= 0:
                 continue
                 
-            beep_segment = beep_gen.to_audio_segment(duration=duration, volume=0.0)
+            # -10.5 dBFS is approximately 30% linear amplitude
+            beep_segment = beep_gen.to_audio_segment(duration=duration, volume=-10.5)
             audio = audio[:start_ms] + beep_segment + audio[end_ms:]
             
         audio.export(output_path, format="wav")

@@ -12,6 +12,17 @@ All key pipeline components and Web UI assets have been created from scratch:
 1. **FFmpeg Standardization**: Resamples audio to 16kHz mono and normalizes loudness using the `loudnorm` filter (uses local static build binaries `./bin/ffmpeg`).
 2. **Stage 1 (pyannote.audio 3.1)**: Predicts speaker boundaries `[start, end, SPEAKER_ID]` on standard WAV files. Monkey-patched `torchaudio.set_audio_backend` and `numpy.NaN` for compatibility with NumPy 2.0+ and newer PyTorch libraries.
 3. **Stage 2 (Qwen3-ASR & Voice Slices)**: Slices normalized audio into independent speaker segments (e.g. `/static/audio/...`) and transcribes using the unified ASR model call. Generates linear word-level timestamps in raw metadata without merging or modifying turn texts.
+
+## Call Analytics UI Overhaul
+- **Moved Analytics to Middle Panel**: Extracted the Call Analytics graphs (Category Performance & Emotional Analysis) from a modal and embedded them directly into the Agent Summary pane (middle panel) under a new "Analytics" section.
+- **Removed "View Graphs" Button**: Cleaned up the right panel's toolbar by removing the standalone "View Graphs" button as the graphs are now prominently visible in the middle panel.
+- **Analytics Modal Integration**: To ensure the call recordings (session list) remain fully visible and do not get pushed out of the UI range, all analytics charts (Category Performance, Emotional Analysis, and Score Trend) have been moved into a dedicated pop-up modal.
+- **Middle Panel Buttons**: The "Call Analytics" and "Trend Analysis" buttons in the middle panel now act as triggers to open the analytics modal, mirroring the clean behavior of the Upload modals. The modal opens directly to the relevant tab based on which button you clicked.
+- **Dynamic Trend Visibility**: The "Trend Analysis" button is always visible now. If clicked when there is only one call (or zero), it gracefully displays a "Trend analysis requires more than 1 call." message instead of an empty graph.
+- **Expanded Emotional Summary**: 
+    - Updated the textual summary logic to incorporate up to the top 4 emotional aspects, giving a more holistic sentence instead of solely focusing on "Happiness".
+    - Converted the emotional analysis doughnut chart to a `polarArea` chart to better represent multiple emotional dimensions and visually consider zero-value aspects instead of completely hiding them.
+
 4. **Stage 3 (Turn Formatter)**: Formats turns 1-to-1 without text/audio concatenation. Calculates WPM and floor share percentage per speaker.
 5. **Stage 4 (LLM Speaker Scorer)**: Receives strictly text transcripts and duration metrics. Support is included for both Gemini and OpenAI structured JSON outputs, along with a fallback mockup.
 6. **Backend Server (`app.py`)**: FastAPI REST endpoints with dynamic status polling and persistent JSON file database storage.

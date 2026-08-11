@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Outlook Voice Analytics - AI Speaker Scoring Dashboard</title>
     <link rel="icon" type="image/png" href="/static/favicon.png" />
-    <link rel="stylesheet" href="/static/styles.css?v=15">
+    <link rel="stylesheet" href="/static/styles.css?v=16">
     <!-- Google Fonts for premium modern typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +27,21 @@
                     <i class="ms-Icon ms-Icon--AddFriend" aria-hidden="true"></i> Add Agent(s)
                 </button>
             </div>
-            <div class="inbox-search">
+            <div class="inbox-search" style="display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px;">
+                <select id="agentDepartmentFilter" class="fluent-select" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: white; font-size: 15px; width: 100%;">
+                    <option value="all">All Departments</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Support">Support / Tech Support</option>
+                    <option value="Customer Success">Customer Success</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="custom">+ Add Department</option>
+                </select>
+                <div id="customDepartmentContainer" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="text" id="customDepartmentInput" class="fluent-input" placeholder="Enter department..." style="flex: 1; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <button id="btnApplyCustomDepartment" class="fluent-btn-primary" style="padding: 6px 12px; border-radius: 4px;">Search</button>
+                    </div>
+                </div>
                 <div class="search-box">
                     <i class="ms-Icon ms-Icon--Search" aria-hidden="true"></i>
                     <input type="text" id="searchAgents" placeholder="Search agents...">
@@ -126,7 +140,7 @@
         <div class="resizer" id="resizer2"></div>
 
         <!-- Panel 3: Recording Analysis -->
-        <main class="outlook-reading-pane" id="recordingAnalysisPane" style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
+        <main class="outlook-reading-pane" id="recordingAnalysisPane" style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
             <div class="empty-state" id="emptyState">
                 <i class="ms-Icon ms-Icon--Audio" aria-hidden="true"></i>
                 <h1>Select a Recording</h1>
@@ -146,9 +160,6 @@
                     <div class="toolbar-right">
                         <button class="toolbar-btn" id="btnExportSessionPDF" title="Export Scorecard (PDF)">
                             <i class="ms-Icon ms-Icon--PDF" aria-hidden="true"></i>
-                        </button>
-                        <button class="toolbar-btn" id="btnExportSessionCSV" title="Export Scorecard (CSV)">
-                            <i class="ms-Icon ms-Icon--ExcelDocument" aria-hidden="true"></i>
                         </button>
                         <button class="toolbar-btn" id="btnDraftEmail" title="Draft Email to Agent">
                             <i class="ms-Icon ms-Icon--Mail" aria-hidden="true"></i>
@@ -273,26 +284,26 @@
             </div>
             
             <div id="modalCallAnalyticsContainer" style="display: flex; gap: 20px; flex-wrap: wrap; min-height: 400px; box-sizing: border-box;">
-                <div style="flex: 1; min-width: 300px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                <div style="flex: 1 1 300px; min-width: min(100%, 300px); padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea; box-sizing: border-box;">
                     <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Category Performance</h3>
                     <div style="position: relative; height: 300px; width: 100%;">
                         <canvas id="qaRadarChart"></canvas>
                     </div>
                 </div>
-                <div style="flex: 1; min-width: 300px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                <div style="flex: 1 1 300px; min-width: min(100%, 300px); padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea; box-sizing: border-box;">
                     <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Emotional Analysis</h3>
                     <div style="position: relative; height: 300px; width: 100%;">
                         <canvas id="emotionPolarChart"></canvas>
                     </div>
                 </div>
                 
-                <div style="flex: 1; min-width: 300px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                <div style="flex: 1 1 300px; min-width: min(100%, 300px); padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea; box-sizing: border-box;">
                     <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Score Distribution</h3>
                     <div style="position: relative; height: 300px; width: 100%;">
                         <canvas id="performanceDistributionChart"></canvas>
                     </div>
                 </div>
-                <div style="flex: 1; min-width: 300px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">
+                <div style="flex: 1 1 300px; min-width: min(100%, 300px); padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eaeaea; box-sizing: border-box;">
                     <h3 style="margin-top: 0; font-size: 17px; color: #333; text-align: center; margin-bottom: 20px;">Areas for Improvement</h3>
                     <div style="position: relative; height: 300px; width: 100%;">
                         <canvas id="topImprovementAreasChart"></canvas>
@@ -370,10 +381,42 @@
                     </div>
                     <div id="bulkUploadMessage" style="margin-bottom: 15px; font-size: 16px; display: none;"></div>
                     <button type="submit" class="fluent-btn-primary full-width">
-                        <i class="ms-Icon ms-Icon--Upload" aria-hidden="true"></i> Upload Agents
+                        <i class="ms-Icon ms-Icon--Upload" aria-hidden="true"></i> Import Agents
                     </button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Agent Modal -->
+    <div class="fluent-modal" id="editAgentModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Edit Agent</h2>
+                <i class="ms-Icon ms-Icon--Cancel" id="editAgentModalClose" aria-hidden="true"></i>
+            </div>
+            <form id="editAgentForm">
+                <input type="hidden" id="editAgentIdOriginal">
+                <div class="form-group">
+                    <label>Agent Name</label>
+                    <input type="text" id="editAgentNameInput" class="fluent-input" required oninput="this.value = this.value.replace(/^\s+/g, '')">
+                </div>
+                <div class="form-group">
+                    <label>Agent Email (ID)</label>
+                    <input type="text" id="editAgentIdInput" class="fluent-input" required oninput="this.value = this.value.replace(/^\s+/g, '')">
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="editAgentLocationInput" class="fluent-input" required oninput="this.value = this.value.replace(/^\s+/g, '')">
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="editAgentDepartmentInput" class="fluent-input" required oninput="this.value = this.value.replace(/^\s+/g, '')">
+                </div>
+                <button type="submit" class="fluent-btn-primary full-width">
+                    <i class="ms-Icon ms-Icon--Save" aria-hidden="true"></i> Save Changes
+                </button>
+            </form>
         </div>
     </div>
 
@@ -442,7 +485,6 @@
             </div>
             <div class="progress-meta">
                 <span id="progressPercentage">0%</span>
-                <span>Takes ~30-60s for 30 min audio</span>
             </div>
         </div>
     </div>
@@ -454,78 +496,66 @@
     <div id="toastNotification" style="visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 9999; left: 50%; bottom: 30px; font-size: 17px; transform: translateX(-50%); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: visibility 0s, opacity 0.5s linear; opacity: 0;"></div>
 
     <!-- Hidden PDF Export Template -->
-    <div id="pdfExportTemplate" style="display: none; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #333; background: #fff; line-height: 1.6; width: 680px; margin: 0 auto; box-sizing: border-box;">
+    <style>
+        #pdfExportTemplate tr, #pdfAgentExportTemplate tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+        #pdfExportTemplate div, #pdfAgentExportTemplate div { page-break-inside: avoid !important; break-inside: avoid !important; }
+        #pdfTranscriptContainer > div { page-break-inside: avoid !important; break-inside: avoid !important; }
+    </style>
+    <div id="pdfExportTemplate" style="display: none; padding: 30px; font-family: 'Outfit', 'Segoe UI', sans-serif; color: #333; background: #fff; line-height: 1.6; width: 680px; margin: 0 auto; box-sizing: border-box;">
         <div style="border-bottom: 2px solid #0078d4; padding-bottom: 15px; margin-bottom: 20px;">
             <h1 style="color: #0078d4; margin: 0; font-size: 28px;">Quality Assurance Scorecard</h1>
             <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;" id="pdfSessionDate"></p>
         </div>
         
-        <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse; table-layout: fixed; word-wrap: break-word;">
+        <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse; table-layout: fixed; border: 1px solid #e0e0e0;">
             <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold; width: 25%;">Agent Name</td>
-                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentName"></td>
-                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold; width: 25%;">Overall Score</td>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; font-size: 18px; color: #107c41;" id="pdfOverallScore"></td>
+                <td style="padding: 12px; border: 1px solid #e0e0e0; background: #f4f4f4; font-weight: bold; width: 25%;">Agent Name</td>
+                <td style="padding: 12px; border: 1px solid #e0e0e0; width: 25%;" id="pdfAgentName"></td>
+                <td style="padding: 12px; border: 1px solid #e0e0e0; background: #f4f4f4; font-weight: bold; width: 25%;">Overall Score</td>
+                <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: bold; font-size: 18px; color: #107c41; width: 25%;" id="pdfOverallScore"></td>
             </tr>
             <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold;">Topic</td>
-                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfSessionTopic" colspan="3"></td>
+                <td style="padding: 12px; border: 1px solid #e0e0e0; background: #f4f4f4; font-weight: bold;">Topic</td>
+                <td style="padding: 12px; border: 1px solid #e0e0e0;" id="pdfSessionTopic" colspan="3"></td>
             </tr>
         </table>
 
-        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Category Breakdown</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
-            <tr style="background: #f3f2f1;">
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Category</th>
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">Professionalism</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatProf"></td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">Technical Accuracy</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatTech"></td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">Process Adherence</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatProc"></td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">Customer Experience</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatExp"></td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">Efficiency Metrics</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;" id="pdfCatEff"></td>
-            </tr>
-        </table>
-
-        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Emotion Analysis</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
-            <tr style="background: #f3f2f1;">
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Emotion</th>
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Percentage</th>
-            </tr>
-            <tbody id="pdfEmotionList">
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd; font-style: italic; color: #666;" colspan="2">No emotion data available</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px;">Reviewer Feedback</h2>
-        <div style="padding: 15px; background: #faf9f8; border-left: 4px solid #0078d4; border-radius: 4px; margin-bottom: 20px; page-break-inside: avoid;">
-            <p style="margin: 0; white-space: pre-wrap;" id="pdfReviewerFeedback"></p>
+        <div>
+            <h2 style="font-size: 20px; color: #0078d4; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px;">Category Breakdown</h2>
+            <div id="pdfCategoryBreakdownContainer"></div>
         </div>
 
-        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; page-break-before: always;">Call Transcript</h2>
-        <div style="padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-bottom: 20px;" id="pdfTranscriptContainer">
+        <div>
+            <h2 style="font-size: 20px; color: #0078d4; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px;">Emotion Analysis</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; border: 1px solid #e0e0e0;">
+                <tr style="background: #f4f4f4;">
+                    <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: left; font-weight: bold;">Emotion</th>
+                    <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: center; font-weight: bold;">Percentage</th>
+                </tr>
+                <tbody id="pdfEmotionList">
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e0e0e0; font-style: italic; color: #666;" colspan="2">No emotion data available</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <h2 style="font-size: 20px; color: #0078d4; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px;">Reviewer Feedback</h2>
+            <div style="padding: 20px; background: #faf9f8; border: 1px solid #eee; border-radius: 4px; margin-bottom: 30px; page-break-inside: avoid;">
+                <p style="margin: 0; white-space: pre-wrap; color: #333; line-height: 1.6; word-wrap: break-word;" id="pdfReviewerFeedback"></p>
+            </div>
+        </div>
+
+        <div>
+            <h2 style="font-size: 20px; color: #0078d4; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px;">Call Transcript</h2>
+            <div id="pdfTranscriptContainer" style="margin-bottom: 20px;">
+            </div>
         </div>
     </div>
 
     <!-- Hidden Agent PDF Export Template -->
-    <div id="pdfAgentExportTemplate" style="display: none; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #333; background: #fff; line-height: 1.6; width: 680px; margin: 0 auto; box-sizing: border-box;">
+    <div id="pdfAgentExportTemplate" style="display: none; padding: 40px; font-family: 'Outfit', 'Segoe UI', sans-serif; color: #333; background: #fff; line-height: 1.6; width: 680px; margin: 0 auto; box-sizing: border-box;">
         <div style="border-bottom: 2px solid #0078d4; padding-bottom: 15px; margin-bottom: 20px;">
             <h1 style="color: #0078d4; margin: 0; font-size: 28px;">Agent Performance Report</h1>
             <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;" id="pdfAgentReportDate"></p>
@@ -540,26 +570,34 @@
             </tr>
             <tr>
                 <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold;">Total Calls</td>
-                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentReportCalls"></td>
-                <td style="padding: 8px; border: 1px solid #ddd; background: #f3f2f1; font-weight: bold;">Primary Emotion</td>
-                <td style="padding: 8px; border: 1px solid #ddd;" id="pdfAgentReportEmotion"></td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3" id="pdfAgentReportCalls"></td>
             </tr>
         </table>
 
-        <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Recent Sessions</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
-            <thead>
-                <tr style="background: #f3f2f1;">
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Date</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Topic</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Score</th>
-                </tr>
-            </thead>
-            <tbody id="pdfAgentReportSessionsList">
-            </tbody>
-        </table>
+        <div style="page-break-inside: avoid;">
+            <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Performance Analytics</h2>
+            <div id="pdfAgentChartsContainer" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 30px;">
+                <img id="pdfAgentChartDoughnut" style="width: 250px; height: 250px; display: none; object-fit: contain;" />
+                <img id="pdfAgentChartBar" style="width: 300px; height: 250px; display: none; object-fit: contain;" />
+                <img id="pdfAgentChartRadar" style="width: 250px; height: 250px; display: none; object-fit: contain;" />
+            </div>
+        </div>
+
+        <div>
+            <h2 style="font-size: 18px; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px;">Recent Sessions</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; word-wrap: break-word;">
+                <thead>
+                    <tr style="background: #f3f2f1; color: #333;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Date</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: center; width: 100px;">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="pdfAgentReportSessionsList">
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <script src="/static/app.js?v=23"></script>
+    <script src="/static/app.js?v=49"></script>
 </body>
 </html>

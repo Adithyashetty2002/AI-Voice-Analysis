@@ -60,7 +60,7 @@ class ASRTimestampPipeline:
         Transcribes a sliced segment of audio. Prevents context bleeding across speakers.
         Returns a list of dictionaries containing {"word": str, "start": float, "end": float}.
         """
-        result = self.pipe(audio_path)
+        result = self.pipe(audio_path, generate_kwargs={"condition_on_prev_tokens": False})
         
         word_timestamps = []
         chunks = result.get("chunks", [])

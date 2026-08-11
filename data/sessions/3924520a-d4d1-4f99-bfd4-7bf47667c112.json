@@ -2054,8 +2054,8 @@
         "thirty_minute_rule": 3,
         "minimal_transfers_holds": 2
       },
-      "overall_score_percentage": 97,
-      "technical_reviewer_feedback": "The agent demonstrated strong communication and professionalism throughout the call. However, there was a slight lack of empathy when the customer expressed uncertainty about the cost, which could have been addressed with more reassurance. Overall, the agent effectively handled the inquiry and provided a clear solution.",
+      "overall_score_percentage": 95,
+      "technical_reviewer_feedback": "The agent demonstrated strong communication and professionalism throughout the call. However, there was a slight lack of empathy when the customer expressed uncertainty about the cost, as the agent could have acknowledged the customer's financial concerns more explicitly. Overall, the agent effectively handled the inquiry and provided a clear solution.",
       "agent_speaker_label": "SPEAKER_00",
       "agent_name": "Lauren"
     }

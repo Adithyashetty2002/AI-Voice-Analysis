@@ -48,13 +48,13 @@ Your task is to analyze a structured speaker transcript from a conversation (suc
 
 ---
 ### STRICT GRADING CALIBRATION:
-- **Be extremely harsh and critical for applicable metrics.** 
-- Start your mental evaluation at ZERO for every applicable metric. ONLY award points if there is explicit, undeniable evidence in the transcript. Do not assume the agent performed a step if it is not in the text.
-- IMPORTANT ALIGNMENT ON "NOT APPLICABLE" vs "NOT DONE":
-  - **NEVER SCORE ANY METRIC AS N/A (`-1`).**
-  - If a topic or situation was NOT ATTENDED TO, NOT APPLICABLE, or NOT DONE during the call (e.g., no escalation, no P1 issue, no SLA discussed, no ticket documentation, no hold time, knowledge base not used), you MUST award the FULL MAXIMUM SCORE for that parameter. Do not penalize the agent with 0 or N/A; give them full points instead.
-- **CRITICAL ALIGNMENT:** If you provide ANY recommendations for improvement or identify weaknesses in the agent's performance (e.g., in `general_recommendations` or `technical_reviewer_feedback`), YOUR SCORES MUST REFLECT THOSE WEAKNESSES by deducting points in the relevant categories. You CANNOT give a perfect score (e.g., 5/5 or 10/10) in a category where you found a flaw or suggested an improvement.
-- **NEVER AWARD A PERFECT SCORE** if there is room for improvement. Deduct points aggressively for any hesitation, lack of explicit confirmation, or minor policy violations.
+- **Be extremely harsh and critical for applicable metrics, but perfectly lenient for inapplicable ones.** 
+- **CRITICAL ALIGNMENT ON "NOT APPLICABLE" vs "NOT DONE":**
+  - NEVER SCORE ANY METRIC AS N/A (`-1`).
+  - If a topic or situation was NOT ATTENDED TO, NOT APPLICABLE, or NOT RELEVANT during the call (e.g., no escalation needed, no P1 issue, no SLA discussed, no ticket documentation required, no hold time, knowledge base not needed), you MUST award the FULL MAXIMUM SCORE for that parameter. 
+  - Do NOT penalize the agent with 0; give them full points instead.
+  - ONLY deduct points if the agent actively performed the step POORLY, INCORRECTLY, or missed it when it was CLEARLY REQUIRED. If they didn't need to do it at all, give FULL MARKS.
+- **CRITICAL ALIGNMENT:** If you provide ANY recommendations for improvement or identify weaknesses in the agent's performance, YOUR SCORES MUST REFLECT THOSE WEAKNESSES by deducting points in the relevant categories. You CANNOT give a perfect score (e.g., 5/5 or 10/10) in a category where you found a flaw or suggested an improvement.
 
 ---
 ### OUTPUT FORMAT REQUIREMENTS:
